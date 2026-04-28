@@ -9,6 +9,12 @@ Compile up and use at your own risk, at some point I'll add some github actions 
 
 ![deverb plugin](deverb-screenshot.png "Deverb Plugin")
 
-It has a dependency on the fftw3 library https://github.com/FFTW/fftw3 which I installed using homebrew
+It has some dependencies: 
+- fftw3 library https://github.com/FFTW/fftw3 which I installed using homebrew
+- iPlug2 which is required as submodule 
+ ``` git submodule add https://github.com/iPlug2/iPlug2.git```
+- If you want to open the code with xcode, run
+```cmake -G Xcode```
 
-- Spen
+
+All free and respective licenses for the sources apply
