@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>English</string>
+	<key>CFBundleExecutable</key>
+	<string>Deverb</string>
+	<key>CFBundleGetInfoString</key>
+	<string>Deverb v1.0.0 GPL v2</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.Postfish.app.Deverb</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleIconFile</key>
+	<string>Deverb</string>
+	<key>CFBundleName</key>
+	<string>Deverb</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0.0</string>
+	<key>CFBundleSignature</key>
+	<string>Dvrb</string>
+	<key>CFBundleVersion</key>
+	<string>1.0.0</string>
+	<key>CSResourcesFileMapped</key>
+	<true/>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.music</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>10.13.0</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app needs mic access to process audio.</string>
+	<key>NSMainNibFile</key>
+	<string>Deverb-macOS-MainMenu</string>
+	<key>NSPrincipalClass</key>
+	<string>SWELLApplication</string>
+</dict>
+</plist>

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <title>DEVERB</title>
+  <!--
+    DEVERB logo glyph
+    Impulse spike (teal) + exponential decay bars (dim)
+    Canonical source — scale freely, stays square.
+
+    Palette:
+      teal  #22bfbf
+      dim   rgb(110,122,134) @ 0.86 opacity
+  -->
+
+  <rect x="0" y="0" width="100" height="100" fill="#000000"/>
+  <!-- Decay bars: i=0..11, x from barStart, height = 80*0.82*0.72^i -->
+  <g stroke="rgb(110,122,134)" stroke-opacity="0.86" stroke-linecap="round">
+    <line x1="23.4"  y1="90" x2="23.4"  y2="24.4"  stroke-width="2.5"/>
+    <line x1="29.3"  y1="90" x2="29.3"  y2="42.8"  stroke-width="2.5"/>
+    <line x1="35.1"  y1="90" x2="35.1"  y2="56.0"  stroke-width="2.5"/>
+    <line x1="41.0"  y1="90" x2="41.0"  y2="65.5"  stroke-width="2.5"/>
+    <line x1="46.9"  y1="90" x2="46.9"  y2="72.4"  stroke-width="2.5"/>
+    <line x1="52.8"  y1="90" x2="52.8"  y2="77.3"  stroke-width="2.5"/>
+    <line x1="58.6"  y1="90" x2="58.6"  y2="80.9"  stroke-width="2.5"/>
+    <line x1="64.5"  y1="90" x2="64.5"  y2="83.4"  stroke-width="2.5"/>
+    <line x1="70.4"  y1="90" x2="70.4"  y2="85.3"  stroke-width="2.5"/>
+    <line x1="76.3"  y1="90" x2="76.3"  y2="86.6"  stroke-width="2.5"/>
+    <line x1="82.1"  y1="90" x2="82.1"  y2="87.5"  stroke-width="2.5"/>
+    <line x1="88.0"  y1="90" x2="88.0"  y2="88.2"  stroke-width="2.5"/>
+  </g>
+
+  <!-- Impulse spike -->
+  <line x1="16.4" y1="90" x2="16.4" y2="10"
+        stroke="#22bfbf" stroke-width="4.5" stroke-linecap="round"/>
+</svg>
