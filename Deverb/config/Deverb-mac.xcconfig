@@ -1,0 +1,36 @@
+// IPLUG2_ROOT points to the iPlug2 submodule at the repo root
+// common-mac.xcconfig is also at the repo root (OOS pattern — submodule is not modified)
+IPLUG2_ROOT = ../../iPlug2
+
+#include "../../common-mac.xcconfig"
+
+//------------------------------
+// Global build settings
+
+BINARY_NAME = Deverb
+
+// ------------------------------
+// HEADER AND LIBRARY SEARCH PATHS
+EXTRA_INC_PATHS = $(IGRAPHICS_INC_PATHS)
+EXTRA_LIB_PATHS = $(IGRAPHICS_LIB_PATHS)
+EXTRA_LNK_FLAGS = -framework Metal -framework MetalKit
+
+//------------------------------
+// PREPROCESSOR MACROS
+EXTRA_ALL_DEFS = OBJC_PREFIX=vDeverb SWELL_APP_PREFIX=Swell_vDeverb IGRAPHICS_NANOVG IGRAPHICS_METAL
+
+//------------------------------
+// RELEASE BUILD OPTIONS
+PROFILE = NO
+RELEASE_OPTIMIZE = 3
+
+//------------------------------
+// DEBUG BUILD OPTIONS
+DEBUG_OPTIMIZE = 0
+
+//------------------------------
+// MISCELLANEOUS COMPILER OPTIONS
+ARCHS = $(ARCHS_STANDARD_64_BIT)
+GCC_INCREASE_PRECOMPILED_HEADER_SHARING = NO
+GCC_CFLAGS[arch=x86_64] = -Wno-write-strings -mfpmath=sse -msse -msse2 -msse3
+CODE_SIGN_IDENTITY=
