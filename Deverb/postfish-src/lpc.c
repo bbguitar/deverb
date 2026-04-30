@@ -52,6 +52,7 @@ Carsten Bormann
 
 #include "postfish.h"
 #include "lpc.h"
+#include "compat.h"
 
 /* this version is from the Vorbis source code */
 static float lpc_from_data(float *data,float *coeff,int n,int m){

@@ -26,6 +26,11 @@
 # define M_PIl      3.141592653589793238462643383279502884L
 #endif
 
+/* Work around M_PI not being defined without _USE_MATH_DEFINES on MSVC */
+#ifndef M_PI
+# define M_PI       3.141592653589793238462643383279502884
+#endif
+
 /* Work-around lack of PATH_MAX */
 #ifndef PATH_MAX
 # define PATH_MAX 1024
@@ -34,6 +39,8 @@
 /* Windows: map POSIX pthreads to Win32 CRITICAL_SECTION */
 #ifdef _WIN32
 # include <windows.h>
+# include <malloc.h>
+# define alloca _alloca
   typedef CRITICAL_SECTION pthread_mutex_t;
   typedef int pthread_mutexattr_t;
 # define PTHREAD_MUTEX_RECURSIVE 0

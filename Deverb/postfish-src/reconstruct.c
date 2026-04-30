@@ -28,6 +28,7 @@
    Agonizing Pain' for the additional understanding needed to make the
    n^3 -> n^2 log n jump possible. Google for it, you'll find it. */
 
+#include <stdlib.h>
 #include <string.h>
 #include <fftw3.h>
 #include <math.h>
@@ -119,9 +120,9 @@ void reconstruct(float *x, float *w,
 		 float *flag, float e,int max){
   int n=blocksize;
   int i,j;
-  float Atb[n];
-  float r[n];
-  float d[n];
+  float *Atb=malloc(n*sizeof(float));
+  float *r=malloc(n*sizeof(float));
+  float *d=malloc(n*sizeof(float));
   float phi_new,phi_old,res_0,res_new;
   float alpha,beta;
 
@@ -171,4 +172,7 @@ void reconstruct(float *x, float *w,
 
   }
 
+  free(Atb);
+  free(r);
+  free(d);
 }
