@@ -23,9 +23,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        project: [TemplateProject]
+        project: [Deverb]
         # Add more projects here:
-        # project: [TemplateProject, VisageTemplate]
+        # project: [Deverb, VisageTemplate]
 
     steps:
     - name: Check out repository
@@ -112,9 +112,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        project: [TemplateProject]
+        project: [Deverb]
         # Add more projects here:
-        # project: [TemplateProject, VisageTemplate]
+        # project: [Deverb, VisageTemplate]
 
     steps:
       - name: Download artifact
