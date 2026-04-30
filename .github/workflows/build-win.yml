@@ -83,6 +83,9 @@ jobs:
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v2
 
+    - name: Install FFTW3
+      run: vcpkg install fftw3:x64-windows
+
     - name: Build
       shell: pwsh
       run: |

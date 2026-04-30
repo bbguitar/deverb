@@ -91,6 +91,9 @@ jobs:
         cd iPlug2/Dependencies/IPlug
         ./download-clap-sdks.sh ${{env.CLAP_VER}}
 
+    - name: Install FFTW3
+      run: brew install fftw
+
     - name: Build
       shell: bash
       run: |
