@@ -34,21 +34,25 @@
 #define _FILE_OFFSET_BITS 64
 #define _REENTRANT 1
 #include <stdlib.h>
-#include <unistd.h>
 #include <stdio.h>
-#include <fcntl.h>
 #include <errno.h>
-#include <string.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#define __USE_GNU 1
-#include <pthread.h>
 #include <string.h>
 #include <math.h>
 #include <signal.h>
-#include <fcntl.h>
+
+#ifdef _WIN32
+  #include <stdint.h>
+  typedef uint32_t u_int32_t;
+#else
+  #include <unistd.h>
+  #include <fcntl.h>
+  #include <sys/mman.h>
+  #include <sys/stat.h>
+  #include <sys/types.h>
+  #include <sys/time.h>
+  #define __USE_GNU 1
+  #include <pthread.h>
+#endif
 
 #if 0
 extern void ef_free(void * address);

@@ -23,6 +23,7 @@
 
 #include "postfish.h"
 #include "feedback.h"
+#include "compat.h"
 
 static pthread_mutex_t feedback_mutex;
 static pthread_mutexattr_t feedback_mutex_attr;
