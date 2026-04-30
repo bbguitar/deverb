@@ -1,9 +1,12 @@
+.DS_Store
 build/
+*/build/
+*/build-*/
 out/
 CMakeLists.txt.user
 CMakeCache.txt
-CMakeFiles
-CMakeScripts
+CMakeFiles/
+CMakeScripts/
 Testing
 Makefile
 cmake_install.cmake
@@ -12,4 +15,7 @@ compile_commands.json
 CTestTestfile.cmake
 _deps
 CMakeUserPresets.json
-iPlug2/
+PkgInfo
+*.RPP-bak
+.claude/settings.local.json
+__pycache__
