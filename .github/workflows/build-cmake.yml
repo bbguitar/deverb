@@ -52,11 +52,44 @@ jobs:
           cd iPlug2/Dependencies/IPlug
           ./download-iplug-sdks.sh
 
-      - name: Install FFTW3
-        run: brew install fftw
+      - name: Cache FFTW3 universal
+        id: cache-fftw3
+        uses: actions/cache@v4
+        with:
+          path: fftw3-universal
+          key: fftw3-universal-static-3.3.10
+
+      - name: Build FFTW3 universal static library
+        if: steps.cache-fftw3.outputs.cache-hit != 'true'
+        run: |
+          curl -L https://fftw.org/fftw-3.3.10.tar.gz | tar xz
+          cd fftw-3.3.10
+
+          # arm64
+          ./configure --enable-float --disable-shared \
+            CFLAGS="-arch arm64" \
+            --prefix=${{ github.workspace }}/fftw3-arm64
+          make -j$(sysctl -n hw.ncpu) install
+          make clean
+
+          # x86_64 (cross-compile from arm64 runner)
+          ./configure --enable-float --disable-shared \
+            CFLAGS="-arch x86_64" --host=x86_64-apple-darwin \
+            --prefix=${{ github.workspace }}/fftw3-x86_64
+          make -j$(sysctl -n hw.ncpu) install
+          cd ..
+
+          # Lipo into a universal fat static library
+          mkdir -p fftw3-universal/lib fftw3-universal/include
+          lipo -create fftw3-arm64/lib/libfftw3f.a fftw3-x86_64/lib/libfftw3f.a \
+            -output fftw3-universal/lib/libfftw3f.a
+          cp fftw3-arm64/include/fftw3.h fftw3-universal/include/
 
       - name: CMake Configure
-        run: cmake --preset=macos-xcode-universal
+        run: |
+          cmake --preset=macos-xcode-universal \
+            -DFFTW3F_LIB=${{ github.workspace }}/fftw3-universal/lib/libfftw3f.a \
+            -DFFTW3_INCLUDE_DIR=${{ github.workspace }}/fftw3-universal/include
 
       - name: Build VST3
         run: cmake --build --preset=macos-xcode-universal --config Release --target ${{env.PROJECT_NAME}}-vst3
