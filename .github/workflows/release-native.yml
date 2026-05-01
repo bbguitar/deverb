@@ -1,149 +1,212 @@
 name: Release Native
 
 on:
-  # workflow_dispatch
   push:
     tags:
-      - "v*"
+      - 'v*'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 env:
   PROJECT_NAME: Deverb
 
 jobs:
-  create_release:
-    name: Create release
-    runs-on: ubuntu-latest
-    outputs:
-      upload_url: ${{steps.create_release.outputs.upload_url}}
+  # ==========================================================================
+  # macOS Universal (arm64 + x86_64) — VST3 and AU
+  # ==========================================================================
+  macos-universal:
+    name: macOS Universal (VST3 + AU)
+    runs-on: macos-latest
     steps:
-      - name: Check out repository
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Create release
-        id: create_release
-        uses: actions/create-release@v1
+      - name: Cache IPlug SDKs
+        id: cache-sdks
+        uses: actions/cache@v4
+        with:
+          path: |
+            iPlug2/Dependencies/IPlug/VST3_SDK
+            iPlug2/Dependencies/IPlug/CLAP_SDK
+            iPlug2/Dependencies/IPlug/CLAP_HELPERS
+          key: iplug-sdks-${{ hashFiles('iPlug2/Dependencies/IPlug/download-iplug-sdks.sh') }}
+
+      - name: Get SDKs
+        if: steps.cache-sdks.outputs.cache-hit != 'true'
+        run: |
+          cd iPlug2/Dependencies/IPlug
+          ./download-iplug-sdks.sh
+
+      - name: Cache FFTW3 universal
+        id: cache-fftw3
+        uses: actions/cache@v4
+        with:
+          path: fftw3-universal
+          key: fftw3-universal-static-3.3.10
+
+      - name: Build FFTW3 universal static library
+        if: steps.cache-fftw3.outputs.cache-hit != 'true'
+        run: |
+          curl -L https://fftw.org/fftw-3.3.10.tar.gz | tar xz
+          cd fftw-3.3.10
+
+          # arm64
+          ./configure --enable-float --disable-shared \
+            CFLAGS="-arch arm64" \
+            --prefix=${{ github.workspace }}/fftw3-arm64
+          make -j$(sysctl -n hw.ncpu) install
+          make clean
+
+          # x86_64 (cross-compile from arm64 runner)
+          ./configure --enable-float --disable-shared \
+            CFLAGS="-arch x86_64" --host=x86_64-apple-darwin \
+            --prefix=${{ github.workspace }}/fftw3-x86_64
+          make -j$(sysctl -n hw.ncpu) install
+          cd ..
+
+          # Lipo into a universal fat static library
+          mkdir -p fftw3-universal/lib fftw3-universal/include
+          lipo -create fftw3-arm64/lib/libfftw3f.a fftw3-x86_64/lib/libfftw3f.a \
+            -output fftw3-universal/lib/libfftw3f.a
+          cp fftw3-arm64/include/fftw3.h fftw3-universal/include/
+
+      - name: CMake Configure
+        run: |
+          cmake --preset=macos-xcode-universal \
+            -DFFTW3F_LIB=${{ github.workspace }}/fftw3-universal/lib/libfftw3f.a \
+            -DFFTW3_INCLUDE_DIR=${{ github.workspace }}/fftw3-universal/include
+
+      - name: Build VST3
+        run: cmake --build --preset=macos-xcode-universal --config Release --target ${{env.PROJECT_NAME}}-vst3
+
+      - name: Build AU
+        run: cmake --build --preset=macos-xcode-universal --config Release --target ${{env.PROJECT_NAME}}-au
+
+      - name: Verify Universal Binaries
+        run: |
+          VST3_EXEC="build/macos-xcode-universal/out/Release/${{env.PROJECT_NAME}}.vst3/Contents/MacOS/${{env.PROJECT_NAME}}"
+          AU_EXEC="build/macos-xcode-universal/out/Release/${{env.PROJECT_NAME}}.component/Contents/MacOS/${{env.PROJECT_NAME}}"
+          for EXEC in "$VST3_EXEC" "$AU_EXEC"; do
+            ARCHS=$(lipo -archs "$EXEC")
+            echo "$EXEC: $ARCHS"
+            [[ "$ARCHS" == *"arm64"* ]] && [[ "$ARCHS" == *"x86_64"* ]] || exit 1
+          done
+          echo "Universal VST3 and AU verified"
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{env.PROJECT_NAME}}-macos-universal
+          path: |
+            build/macos-xcode-universal/out/Release/${{env.PROJECT_NAME}}.vst3
+            build/macos-xcode-universal/out/Release/${{env.PROJECT_NAME}}.component
+          if-no-files-found: error
+
+  # ==========================================================================
+  # Windows x64 — VST3
+  # ==========================================================================
+  windows-vst3:
+    name: Windows VST3
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Cache IPlug SDKs
+        id: cache-sdks
+        uses: actions/cache@v4
+        with:
+          path: |
+            iPlug2/Dependencies/IPlug/VST3_SDK
+            iPlug2/Dependencies/IPlug/CLAP_SDK
+            iPlug2/Dependencies/IPlug/CLAP_HELPERS
+          key: iplug-sdks-${{ hashFiles('iPlug2/Dependencies/IPlug/download-iplug-sdks.sh') }}
+
+      - name: Get SDKs
+        if: steps.cache-sdks.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          cd iPlug2/Dependencies/IPlug
+          ./download-iplug-sdks.sh
+
+      - name: Install FFTW3
+        run: vcpkg install fftw3:x64-windows
+
+      - name: CMake Configure
+        run: cmake --preset=windows-vs2022 -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake"
+
+      - name: Build VST3
+        run: cmake --build --preset=windows-vs2022 --config Release --target ${{env.PROJECT_NAME}}-vst3
+
+      - name: Verify VST3
+        shell: pwsh
+        run: |
+          if (!(Test-Path "build\windows-vs2022\out\${{env.PROJECT_NAME}}.vst3")) { exit 1 }
+          echo "VST3 bundle verified"
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{env.PROJECT_NAME}}-windows-vst3
+          path: build/windows-vs2022/out/${{env.PROJECT_NAME}}.vst3
+          if-no-files-found: error
+
+  # ==========================================================================
+  # Package and publish draft release (tag pushes only)
+  # ==========================================================================
+  release:
+    name: Create Draft Release
+    needs: [macos-universal, windows-vst3]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{env.PROJECT_NAME}}-macos-universal
+          path: macos-artifacts
+
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{env.PROJECT_NAME}}-windows-vst3
+          path: windows-artifacts
+
+      - name: Package macOS DMG
+        run: |
+          mkdir staging
+          VST3=$(find macos-artifacts -name "*.vst3" -type d | head -1)
+          COMPONENT=$(find macos-artifacts -name "*.component" -type d | head -1)
+          cp -r "$VST3" staging/
+          cp -r "$COMPONENT" staging/
+          hdiutil create \
+            -volname "${{env.PROJECT_NAME}} ${{github.ref_name}}" \
+            -srcfolder staging \
+            -ov -format UDZO \
+            "${{env.PROJECT_NAME}}-${{github.ref_name}}-macos-universal.dmg"
+
+      - name: Package Windows ZIP
+        run: |
+          VST3_PATH=$(find windows-artifacts -name "*.vst3" -type d | head -1)
+          VST3_DIR=$(dirname "$VST3_PATH")
+          VST3_NAME=$(basename "$VST3_PATH")
+          (cd "$VST3_DIR" && zip -r "$GITHUB_WORKSPACE/${{env.PROJECT_NAME}}-${{github.ref_name}}-windows-vst3.zip" "$VST3_NAME")
+
+      - name: Create draft release
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-        with:
-          draft: true
-          tag_name: ${{github.ref}}
-          release_name: Release ${{github.ref}}
-          body_path: ${{env.PROJECT_NAME}}/installer/changelog.txt
-
-  build:
-    name: Build
-    needs: create_release
-    runs-on: ${{matrix.os}}
-    strategy:
-      matrix:
-        os: [macos-latest, windows-latest]
-        include:
-          - os: macos-latest
-            build_dir: build-mac
-          - os: windows-latest
-            build_dir: build-win
-
-    steps:
-    - name: Check out repository
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
-
-    - name: Get VST3 SDK
-      run: |
-        cd iPlug2/Dependencies/IPlug
-        ./download-iplug-sdks.sh
-      shell: bash
-
-    - name: Get Prebuilt Libs
-      run: |
-        cd iPlug2/Dependencies
-        ./download-prebuilt-libs.sh
-      shell: bash
-
-    - name: Get Archive Name macOS
-      id: mac_archivename_step
-      if: matrix.os == 'macOS-latest'
-      run: |
-        ARCHIVE_NAME=`python3 iPlug2/Scripts/get_archive_name.py ${{env.PROJECT_NAME}} mac full`
-        echo "name=archive_name::$ARCHIVE_NAME" >> $GITHUB_OUTPUT
-      shell: bash
-
-    - name: Build macOS
-      if: matrix.os == 'macOS-latest'
-      run: |
-        cd ${{env.PROJECT_NAME}}/scripts
-        ./makedist-mac.sh full installer
-      shell: bash
-
-    - name: Upload mac DSYMs release asset
-      if: matrix.os == 'macOS-latest'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-      with:
-        upload_url: ${{needs.create_release.outputs.upload_url}}
-        asset_path: ${{env.PROJECT_NAME}}/${{matrix.build_dir}}/out/${{steps.mac_archivename_step.outputs.archive_name}}-dSYMs.zip
-        asset_name: ${{steps.mac_archivename_step.outputs.archive_name}}-dSYMs.zip
-        asset_content_type: application/zip
-
-    - name: Upload mac dmg release asset
-      if: matrix.os == 'macOS-latest'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-      with:
-        upload_url: ${{needs.create_release.outputs.upload_url}}
-        asset_path: ${{env.PROJECT_NAME}}/${{matrix.build_dir}}/out/${{steps.mac_archivename_step.outputs.archive_name}}.dmg
-        asset_name: ${{steps.mac_archivename_step.outputs.archive_name}}.dmg
-        asset_content_type: application/octet-stream
-
-    - name: Add msbuild to PATH (Windows)
-      if: matrix.os == 'windows-latest'
-      uses: microsoft/setup-msbuild@v1
-
-    - name: Setup Python3
-      if: matrix.os == 'windows-latest'
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.x'
-        architecture: 'x64'
-
-    - name: Get Archive Name Windows
-      id: win_archivename_step
-      if: matrix.os == 'windows-latest'
-      run: |
-        ARCHIVE_NAME=`python.exe iPlug2/Scripts/get_archive_name.py ${{env.PROJECT_NAME}} win full`
-        echo "name=archive_name::$ARCHIVE_NAME" >> $GITHUB_OUTPUT
-      shell: bash
-
-    - name: Build Windows
-      if: matrix.os == 'windows-latest'
-      run: |
-        cd ${{env.PROJECT_NAME}}\scripts
-        .\makedist-win.bat full installer
-      shell: pwsh
-
-    - name: Upload Windows pdb release asset
-      if: matrix.os == 'windows-latest'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-      with:
-        upload_url: ${{needs.create_release.outputs.upload_url}}
-        asset_path: ${{env.PROJECT_NAME}}/${{matrix.build_dir}}/out/${{steps.win_archivename_step.outputs.archive_name}}-pdbs.zip
-        asset_name: ${{steps.win_archivename_step.outputs.archive_name}}-pdbs.zip
-        asset_content_type: application/zip
-
-    - name: Upload Windows zip release asset
-      if: matrix.os == 'windows-latest'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-      with:
-        upload_url: ${{needs.create_release.outputs.upload_url}}
-        asset_path: ${{env.PROJECT_NAME}}/${{matrix.build_dir}}/out/${{steps.win_archivename_step.outputs.archive_name}}.zip
-        asset_name: ${{steps.win_archivename_step.outputs.archive_name}}.zip
-        asset_content_type: application/zip
+        run: |
+          gh release create "${{github.ref_name}}" \
+            --draft \
+            --title "${{env.PROJECT_NAME}} ${{github.ref_name}}" \
+            "${{env.PROJECT_NAME}}-${{github.ref_name}}-macos-universal.dmg" \
+            "${{env.PROJECT_NAME}}-${{github.ref_name}}-windows-vst3.zip"
