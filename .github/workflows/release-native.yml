@@ -155,7 +155,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{env.PROJECT_NAME}}-windows-vst3
-          path: build/windows-vs2022/out/${{env.PROJECT_NAME}}.vst3
+          path: build/windows-vs2022/out/
           if-no-files-found: error
 
   # ==========================================================================
