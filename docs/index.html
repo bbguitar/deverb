@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deverb — Multiband Spectral Dereverberation</title>
+<meta name="description" content="Free VST3 and AU plugin for multiband spectral dereverberation. Eight perceptually-spaced frequency bands. macOS and Windows.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400&family=Roboto+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --teal:        #22bfbf;
+  --teal-dim:    rgba(34,191,191,0.12);
+  --teal-border: rgba(34,191,191,0.35);
+  --bg-deep:     #191b22;
+  --bg-body:     #20222a;
+  --bg-card:     #22242d;
+  --rule:        #2a2c38;
+  --border:      #2c2e3c;
+  --border-hv:   #3a3d4e;
+  --fg:          #c8d2cd;
+  --label:       #88a0a8;
+  --dim:         #3e5060;
+  --font:        'Roboto', system-ui, sans-serif;
+  --mono:        'Roboto Mono', monospace;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg-body);
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* ── Nav ─────────────────────────────────────────────── */
+nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg-deep);
+  border-bottom: 1px solid var(--rule);
+  height: 52px;
+  display: flex;
+  align-items: center;
+  padding: 0 32px;
+  gap: 20px;
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: auto;
+}
+
+.nav-wordmark {
+  font-size: 13px;
+  letter-spacing: 0.20em;
+  color: var(--teal);
+  font-weight: 400;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.nav-link {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--dim);
+  text-transform: uppercase;
+  transition: color 0.12s;
+}
+.nav-link:hover { color: var(--label); }
+
+.nav-gh {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  color: var(--dim);
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 5px 10px;
+  transition: border-color 0.12s, color 0.12s;
+}
+.nav-gh:hover { border-color: var(--border-hv); color: var(--label); }
+
+/* ── Hero ────────────────────────────────────────────── */
+.hero {
+  background: var(--bg-deep);
+  padding: 96px 32px 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0;
+}
+
+.hero-logo-wrap {
+  margin-bottom: 36px;
+}
+
+.hero h1 {
+  font-size: 42px;
+  font-weight: 300;
+  letter-spacing: 0.08em;
+  color: var(--fg);
+  line-height: 1.15;
+  margin-bottom: 12px;
+}
+
+.hero h1 .accent { color: var(--teal); }
+
+.hero-sub {
+  font-size: 15px;
+  font-weight: 300;
+  color: var(--label);
+  max-width: 520px;
+  line-height: 1.7;
+  margin-bottom: 40px;
+}
+
+.cta-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 28px;
+  border: 1px solid var(--teal);
+  border-radius: 4px;
+  color: var(--teal);
+  font-size: 11px;
+  font-family: var(--font);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.btn-primary:hover { background: var(--teal-dim); }
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 28px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--label);
+  font-size: 11px;
+  font-family: var(--font);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  background: transparent;
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s;
+}
+.btn-secondary:hover { border-color: var(--border-hv); color: var(--fg); }
+
+.hero-note {
+  margin-top: 20px;
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  color: var(--dim);
+  text-transform: uppercase;
+}
+
+/* ── Feature strip ───────────────────────────────────── */
+.features {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+}
+
+.feature {
+  padding: 28px 28px;
+  border-right: 1px solid var(--rule);
+}
+.feature:last-child { border-right: none; }
+
+.feature-title {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--teal);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.feature-body {
+  font-size: 12px;
+  font-weight: 300;
+  color: var(--dim);
+  line-height: 1.6;
+}
+
+/* ── Section ─────────────────────────────────────────── */
+.section {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 80px 32px;
+}
+
+.section-label {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--dim);
+  text-transform: uppercase;
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.section h2 {
+  font-size: 26px;
+  font-weight: 300;
+  letter-spacing: 0.04em;
+  color: var(--fg);
+  margin-bottom: 16px;
+}
+
+.section p {
+  font-size: 14px;
+  font-weight: 300;
+  color: var(--label);
+  max-width: 580px;
+  line-height: 1.75;
+  margin-bottom: 16px;
+}
+
+/* ── Screenshot ──────────────────────────────────────── */
+.screenshot-wrap {
+  margin-top: 40px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  display: inline-block;
+  max-width: 100%;
+}
+
+.screenshot-wrap img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* ── How it works ────────────────────────────────────── */
+.bands-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 8px;
+  margin-top: 32px;
+}
+
+.band {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.band-bar-wrap {
+  width: 100%;
+  height: 80px;
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  display: flex;
+  align-items: flex-end;
+  padding: 4px;
+}
+
+.band-bar {
+  width: 100%;
+  background: var(--teal);
+  border-radius: 2px;
+  opacity: 0.7;
+}
+
+.band-label {
+  font-size: 9px;
+  font-family: var(--mono);
+  color: var(--dim);
+  letter-spacing: 0.04em;
+}
+
+/* ── Divider ─────────────────────────────────────────── */
+.divider {
+  height: 1px;
+  background: var(--rule);
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* ── Footer ──────────────────────────────────────────── */
+footer {
+  background: var(--bg-deep);
+  border-top: 1px solid var(--rule);
+  padding: 40px 32px;
+}
+
+.footer-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.footer-wordmark {
+  font-size: 11px;
+  letter-spacing: 0.20em;
+  color: var(--dim);
+}
+
+.footer-copy {
+  font-size: 11px;
+  font-weight: 300;
+  color: var(--dim);
+  line-height: 1.7;
+  max-width: 420px;
+}
+
+.footer-copy a {
+  color: var(--label);
+  border-bottom: 1px solid var(--border);
+  transition: color 0.12s;
+}
+.footer-copy a:hover { color: var(--fg); }
+
+.footer-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.footer-link {
+  font-size: 11px;
+  letter-spacing: 0.10em;
+  color: var(--dim);
+  text-transform: uppercase;
+  transition: color 0.12s;
+}
+.footer-link:hover { color: var(--label); }
+
+/* ── Responsive ──────────────────────────────────────── */
+@media (max-width: 700px) {
+  .features { grid-template-columns: repeat(2, 1fr); }
+  .feature:nth-child(2) { border-right: none; }
+  .feature:nth-child(3) { border-top: 1px solid var(--rule); }
+  .feature:nth-child(4) { border-top: 1px solid var(--rule); border-right: none; }
+  .hero h1 { font-size: 30px; }
+  .bands-grid { grid-template-columns: repeat(4, 1fr); }
+  nav { padding: 0 16px; }
+  .nav-links .nav-link { display: none; }
+  .section { padding: 56px 20px; }
+}
+
+@media (max-width: 420px) {
+  .features { grid-template-columns: 1fr; }
+  .feature { border-right: none; border-top: 1px solid var(--rule); }
+  .feature:first-child { border-top: none; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- ── Nav ──────────────────────────────────────────────── -->
+<nav>
+  <div class="nav-brand">
+    <canvas id="nav-logo" width="24" height="24"></canvas>
+    <span class="nav-wordmark">DEVERB</span>
+  </div>
+  <div class="nav-links">
+    <a href="#how-it-works" class="nav-link">How it works</a>
+    <a href="#download" class="nav-link">Download</a>
+    <a href="https://github.com/bbguitar/deverb" class="nav-gh" target="_blank" rel="noopener">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+        <path d="M8 1C4.134 1 1 4.134 1 8c0 3.09 2.006 5.713 4.788 6.637.35.065.478-.151.478-.337 0-.166-.006-.606-.009-1.19-1.947.424-2.358-.939-2.358-.939-.318-.809-.777-1.024-.777-1.024-.635-.434.048-.425.048-.425.702.049 1.072.72 1.072.72.624 1.069 1.637.76 2.037.582.063-.452.244-.76.444-.935-1.554-.177-3.188-.777-3.188-3.46 0-.764.273-1.39.72-1.88-.072-.177-.312-.89.069-1.854 0 0 .587-.188 1.923.716A6.7 6.7 0 0 1 8 4.979c.595.003 1.194.08 1.754.236 1.333-.904 1.919-.716 1.919-.716.382.965.141 1.677.069 1.854.448.49.719 1.116.719 1.88 0 2.69-1.637 3.281-3.196 3.454.251.217.475.644.475 1.298 0 .937-.008 1.693-.008 1.923 0 .187.126.405.481.337C12.996 13.71 15 11.089 15 8c0-3.866-3.134-7-7-7z" fill="currentColor"/>
+      </svg>
+      GitHub
+    </a>
+  </div>
+</nav>
+
+<!-- ── Hero ─────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-logo-wrap">
+    <canvas id="hero-logo" width="120" height="120"></canvas>
+  </div>
+  <h1>Remove the room.<br><span class="accent">Keep the signal.</span></h1>
+  <p class="hero-sub">Multiband spectral dereverberation across eight perceptually-spaced frequency bands. Surgical room-acoustic removal for dialogue, voiceover, and location audio.</p>
+  <div class="cta-row" id="download">
+    <a href="https://github.com/bbguitar/deverb/releases/latest" class="btn-primary" target="_blank" rel="noopener">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+        <path d="M8 2v9M4 8l4 4 4-4M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      macOS — VST3 + AU
+    </a>
+    <a href="https://github.com/bbguitar/deverb/releases/latest" class="btn-primary" target="_blank" rel="noopener">
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+        <path d="M8 2v9M4 8l4 4 4-4M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Windows — VST3
+    </a>
+    <a href="https://github.com/bbguitar/deverb" class="btn-secondary" target="_blank" rel="noopener">Source</a>
+  </div>
+  <p class="hero-note">Free and unsigned &mdash; use at your own risk</p>
+</section>
+
+<!-- ── Feature strip ─────────────────────────────────────── -->
+<div class="features">
+  <div class="feature">
+    <div class="feature-title">8 Bands</div>
+    <div class="feature-body">125 Hz–16 kHz. Each band operates independently with its own depth control.</div>
+  </div>
+  <div class="feature">
+    <div class="feature-title">VST3 · AU</div>
+    <div class="feature-body">macOS universal (arm64 + x86_64). Windows x64 VST3.</div>
+  </div>
+  <div class="feature">
+    <div class="feature-title">Postfish DSP</div>
+    <div class="feature-body">Algorithm from <a href="https://github.com/ePirat/Postfish" style="color:var(--label);border-bottom:1px solid var(--border)">Xiph.Org's Postfish</a> suite. Spectral estimation, not learned.</div>
+  </div>
+  <div class="feature">
+    <div class="feature-title">Free</div>
+    <div class="feature-body">GPL-licensed. No activation, no account, no telemetry.</div>
+  </div>
+</div>
+
+<!-- ── Screenshot ────────────────────────────────────────── -->
+<div class="section" id="how-it-works">
+  <div class="section-label">The plugin</div>
+  <h2>Eight bands, one control set</h2>
+  <p>Each frequency band has an independent depth fader — 1× is off, 5× is maximum suppression. The Smooth control sets the analysis window length; Release controls how fast the suppression tracks the reverb tail. Leave most bands flat and only suppress the bands where the room is most audible.</p>
+  <div class="screenshot-wrap">
+    <img src="deverb-screenshot.png" alt="Deverb plugin UI showing eight frequency band faders" width="640">
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ── How it works ──────────────────────────────────────── -->
+<div class="section">
+  <div class="section-label">Algorithm</div>
+  <h2>Spectral dereverberation</h2>
+  <p>The plugin splits the signal into eight bark-spaced subbands, then applies spectral subtraction within each band to estimate and remove the reverberant component. Analysis windows compute the envelope of the reverb tail; the suppression gain tracks it in real time.</p>
+  <p>Unlike convolution-based approaches, this operates on the statistics of the incoming signal — no impulse response measurement required. The algorithm is the deverb module from Monty's Postfish codebase (Xiph.Org, 2002–2005), wrapped in an iPlug2 plugin with FFTW3 for the spectral processing.</p>
+
+  <div class="bands-grid" aria-hidden="true">
+    <div class="band">
+      <div class="band-bar-wrap"><div class="band-bar" style="height:55%"></div></div>
+      <div class="band-label">125</div>
+    </div>
+    <div class="band">
+      <div class="band-bar-wrap"><div class="band-bar" style="height:70%"></div></div>
+      <div class="band-label">250</div>
+    </div>
+    <div class="band">
+      <div class="band-bar-wrap"><div class="band-bar" style="height:85%"></div></div>
+      <div class="band-label">500</div>
+    </div>
+    <div class="band">
+      <div class="band-bar-wrap"><div class="band-bar" style="height:90%"></div></div>
+      <div class="band-label">1k</div>
+    </div>
+    <div class="band">
+      <div class="band-bar-wrap"><div class="band-bar" style="height:90%"></div></div>
+      <div class="band-label">2k</div>
+    </div>
+    <div class="band">
+      <div class="band-bar-wrap"><div class="band-bar" style="height:85%"></div></div>
+      <div class="band-label">4k</div>
+    </div>
+    <div class="band">
+      <div class="band-bar-wrap"><div class="band-bar" style="height:70%"></div></div>
+      <div class="band-label">8k</div>
+    </div>
+    <div class="band">
+      <div class="band-bar-wrap"><div class="band-bar" style="height:50%"></div></div>
+      <div class="band-label">16k</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Footer ────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">
+        <canvas id="footer-logo" width="20" height="20"></canvas>
+        <span class="footer-wordmark">DEVERB · POSTFISH · WWMEDIA</span>
+      </div>
+      <p class="footer-copy">
+        Plugin built with <a href="https://github.com/iPlug2/iPlug2" target="_blank" rel="noopener">iPlug2</a>.
+        DSP algorithm from <a href="https://github.com/ePirat/Postfish" target="_blank" rel="noopener">Postfish</a> by Monty and Xiph.Org.
+        Binaries are unsigned — macOS will require approving in System Settings &rsaquo; Privacy &amp; Security.
+        All respective source licences apply.
+      </p>
+    </div>
+    <div class="footer-links">
+      <a href="https://github.com/bbguitar/deverb/releases/latest" class="footer-link" target="_blank" rel="noopener">Download</a>
+      <a href="https://github.com/bbguitar/deverb" class="footer-link" target="_blank" rel="noopener">Source</a>
+      <a href="https://github.com/bbguitar/deverb/issues" class="footer-link" target="_blank" rel="noopener">Issues</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+const TEAL = '#22bfbf';
+const DIM  = 'rgba(110,122,134,0.86)';
+
+function drawLogo(canvas) {
+  const S   = canvas.width;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, S, S);
+
+  const pad      = S * 0.10;
+  const L = pad, T = pad, R = S - pad, B = S - pad;
+  const H        = B - T;
+  const spikeX   = L + (R - L) * 0.08;
+  const spikeW   = Math.max(1, S * 0.045);
+  const barCount = Math.max(4, Math.round(S * 0.12));
+  const barStart = spikeX + S * 0.07;
+  const barEnd   = R - S * 0.02;
+  const barSpan  = barEnd - barStart;
+  const barW     = Math.max(0.8, S * 0.025);
+
+  ctx.lineCap = 'round';
+
+  for (let i = 0; i < barCount; i++) {
+    const t = i / (barCount - 1);
+    const x = barStart + t * barSpan;
+    const h = H * 0.82 * Math.pow(0.72, i);
+    ctx.strokeStyle = DIM;
+    ctx.lineWidth   = barW;
+    ctx.beginPath(); ctx.moveTo(x, B); ctx.lineTo(x, B - h); ctx.stroke();
+  }
+
+  ctx.strokeStyle = TEAL;
+  ctx.lineWidth   = spikeW;
+  ctx.beginPath(); ctx.moveTo(spikeX, B); ctx.lineTo(spikeX, T); ctx.stroke();
+}
+
+['nav-logo', 'hero-logo', 'footer-logo'].forEach(id => {
+  const c = document.getElementById(id);
+  if (c) drawLogo(c);
+});
+</script>
+</body>
+</html>
