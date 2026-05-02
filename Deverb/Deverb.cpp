@@ -266,7 +266,7 @@ Deverb::Deverb(const InstanceInfo& info)
 
         const IVStyle toggleStyle = style
             .WithColor(kBG,  kColBG)
-            .WithColor(kON,  kTeal)
+            .WithColor(kON,  IColor(50, 34, 191, 191))   // subtle teal tint, not solid fill
             .WithColor(kOFF, kColTrack);
 
         const IRECT full = pGraphics->GetBounds();
@@ -374,7 +374,7 @@ Deverb::Deverb(const InstanceInfo& info)
 
             IRECT labelCell = labelRow.GetGridCell(0, i, 1, nBands);
             pGraphics->AttachControl(new ITextControl(labelCell, kBandLabels[i],
-                IText(11.f, kColLabelDim, "Roboto-Regular", EAlign::Center, EVAlign::Middle)));
+                IText(11.f, kColLabel, "Roboto-Regular", EAlign::Center, EVAlign::Middle)));
         }
 
         // Link toggle
