@@ -2,580 +2,991 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Deverb — Multiband Spectral Dereverberation</title>
-<meta name="description" content="Free VST3 and AU plugin for multiband spectral dereverberation. Eight perceptually-spaced frequency bands. macOS and Windows.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400&family=Roboto+Mono:wght@400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500&family=Lora:wght@400;500&display=swap" rel="stylesheet">
 <style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:       #1a1d21;
+    --surface:  #23272e;
+    --deep:     #0d0f12;
+    --border:   #2e3440;
+    --text:     #d8dee9;
+    --muted:    #8090a0;
+    --teal:     #22bfbf;
+    --teal-dim: #0e4040;
+    --green:    #40bf80;
+    --red:      #bf4040;
+    --amber:    #c09030;
+    --mono:     'IBM Plex Mono', monospace;
+    --display:  'Bebas Neue', sans-serif;
+    --body:     'Lora', Georgia, serif;
+  }
 
-:root {
-  --teal:        #22bfbf;
-  --teal-dim:    rgba(34,191,191,0.12);
-  --teal-border: rgba(34,191,191,0.35);
-  --bg-deep:     #191b22;
-  --bg-body:     #20222a;
-  --bg-card:     #22242d;
-  --rule:        #2a2c38;
-  --border:      #2c2e3c;
-  --border-hv:   #3a3d4e;
-  --fg:          #c8d2cd;
-  --label:       #88a0a8;
-  --dim:         #3e5060;
-  --font:        'Roboto', system-ui, sans-serif;
-  --mono:        'Roboto Mono', monospace;
-}
+  html { scroll-behavior: smooth; }
 
-html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 18px;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
 
-body {
-  background: var(--bg-body);
-  color: var(--fg);
-  font-family: var(--font);
-  font-size: 14px;
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-}
+  a { color: inherit; text-decoration: none; }
 
-a { color: inherit; text-decoration: none; }
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 3rem; height: 56px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(26,29,33,0.94);
+    backdrop-filter: blur(12px);
+  }
 
-/* ── Nav ─────────────────────────────────────────────── */
-nav {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: var(--bg-deep);
-  border-bottom: 1px solid var(--rule);
-  height: 52px;
-  display: flex;
-  align-items: center;
-  padding: 0 32px;
-  gap: 20px;
-}
+  .nav-brand { display: flex; align-items: center; gap: 10px; }
 
-.nav-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-right: auto;
-}
+  .nav-logo-text {
+    font-family: var(--mono);
+    font-weight: 500; font-size: 13px;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--teal);
+  }
 
-.nav-wordmark {
-  font-size: 13px;
-  letter-spacing: 0.20em;
-  color: var(--teal);
-  font-weight: 400;
-}
+  .nav-links { display: flex; gap: 2rem; list-style: none; }
 
-.nav-links {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
+  .nav-links a {
+    font-family: var(--mono); font-size: 13px;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted); transition: color 0.15s;
+  }
+  .nav-links a:hover { color: var(--text); }
 
-.nav-link {
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  color: var(--dim);
-  text-transform: uppercase;
-  transition: color 0.12s;
-}
-.nav-link:hover { color: var(--label); }
+  /* ── HERO ── */
+  .hero {
+    padding: 140px 3rem 100px;
+    max-width: 1100px; margin: 0 auto;
+  }
 
-.nav-gh {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  letter-spacing: 0.10em;
-  color: var(--dim);
-  text-transform: uppercase;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 5px 10px;
-  transition: border-color 0.12s, color 0.12s;
-}
-.nav-gh:hover { border-color: var(--border-hv); color: var(--label); }
+  .hero-headline-row {
+    display: flex; align-items: flex-start; gap: 2.5rem;
+    margin-bottom: 0;
+  }
 
-/* ── Hero ────────────────────────────────────────────── */
-.hero {
-  background: var(--bg-deep);
-  padding: 96px 32px 80px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 0;
-}
+  #hero-logo { display: block; flex-shrink: 0; }
 
-.hero-logo-wrap {
-  margin-bottom: 36px;
-}
+  .hero-eyebrow {
+    font-family: var(--mono); font-size: 13px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--teal); margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 0.75rem;
+  }
+  .hero-eyebrow::before {
+    content: ''; display: block;
+    width: 24px; height: 1px; background: var(--teal);
+  }
 
-.hero h1 {
-  font-size: 42px;
-  font-weight: 300;
-  letter-spacing: 0.08em;
-  color: var(--fg);
-  line-height: 1.15;
-  margin-bottom: 12px;
-}
+  .hero-headline {
+    font-family: var(--display);
+    font-size: clamp(72px, 10vw, 128px);
+    line-height: 0.92; letter-spacing: 0.01em; color: var(--text);
+  }
+  .hero-headline .accent { color: var(--teal); display: block; }
 
-.hero h1 .accent { color: var(--teal); }
+  .hero-sub {
+    margin-top: 2.5rem; max-width: 520px;
+    font-size: 18px; line-height: 1.75; color: var(--muted);
+  }
 
-.hero-sub {
-  font-size: 15px;
-  font-weight: 300;
-  color: var(--label);
-  max-width: 520px;
-  line-height: 1.7;
-  margin-bottom: 40px;
-}
+  .hero-actions {
+    display: flex; align-items: center; gap: 1rem;
+    margin-top: 2.5rem; flex-wrap: wrap;
+  }
 
-.cta-row {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 11px 24px; background: var(--teal); color: #071a1a;
+    font-family: var(--mono); font-size: 13px; font-weight: 500;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    border-radius: 2px; transition: opacity 0.15s; white-space: nowrap;
+  }
+  .btn-primary:hover { opacity: 0.85; }
 
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 11px 28px;
-  border: 1px solid var(--teal);
-  border-radius: 4px;
-  color: var(--teal);
-  font-size: 11px;
-  font-family: var(--font);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  background: transparent;
-  cursor: pointer;
-  transition: background 0.12s;
-}
-.btn-primary:hover { background: var(--teal-dim); }
+  .btn-secondary {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 11px 24px; border: 1px solid var(--border); color: var(--muted);
+    font-family: var(--mono); font-size: 13px;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    border-radius: 2px; transition: border-color 0.15s, color 0.15s; white-space: nowrap;
+  }
+  .btn-secondary:hover { border-color: var(--muted); color: var(--text); }
 
-.btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 11px 28px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  color: var(--label);
-  font-size: 11px;
-  font-family: var(--font);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  background: transparent;
-  cursor: pointer;
-  transition: border-color 0.12s, color 0.12s;
-}
-.btn-secondary:hover { border-color: var(--border-hv); color: var(--fg); }
+  .hero-note {
+    margin-top: 1.25rem; font-family: var(--mono); font-size: 12px;
+    letter-spacing: 0.1em; color: var(--teal-dim); text-transform: uppercase;
+  }
 
-.hero-note {
-  margin-top: 20px;
-  font-size: 10px;
-  letter-spacing: 0.10em;
-  color: var(--dim);
-  text-transform: uppercase;
-}
+  /* ── SPECS ── */
+  .specs {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
 
-/* ── Feature strip ───────────────────────────────────── */
-.features {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  border-top: 1px solid var(--rule);
-  border-bottom: 1px solid var(--rule);
-}
+  .spec-cell { padding: 2rem 3rem; border-right: 1px solid var(--border); }
+  .spec-cell:last-child { border-right: none; }
 
-.feature {
-  padding: 28px 28px;
-  border-right: 1px solid var(--rule);
-}
-.feature:last-child { border-right: none; }
+  .spec-label {
+    font-family: var(--mono); font-size: 12px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 0.5rem;
+  }
 
-.feature-title {
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  color: var(--teal);
-  text-transform: uppercase;
-  margin-bottom: 8px;
-}
+  .spec-value {
+    font-family: var(--display); font-size: 32px;
+    letter-spacing: 0.02em; color: var(--text); line-height: 1;
+  }
 
-.feature-body {
-  font-size: 12px;
-  font-weight: 300;
-  color: var(--dim);
-  line-height: 1.6;
-}
+  .spec-detail {
+    font-family: var(--mono); font-size: 12px;
+    color: var(--muted); margin-top: 0.4rem; letter-spacing: 0.06em;
+  }
 
-/* ── Section ─────────────────────────────────────────── */
-.section {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 80px 32px;
-}
+  /* ── SCREENSHOT ── */
+  .screenshot-section { padding: 5rem 3rem; max-width: 1100px; margin: 0 auto; }
 
-.section-label {
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  color: var(--dim);
-  text-transform: uppercase;
-  margin-bottom: 24px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--rule);
-}
+  .section-eyebrow {
+    font-family: var(--mono); font-size: 12px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 1.5rem;
+  }
 
-.section h2 {
-  font-size: 26px;
-  font-weight: 300;
-  letter-spacing: 0.04em;
-  color: var(--fg);
-  margin-bottom: 16px;
-}
+  .screenshot-frame {
+    border: 1px solid var(--border); border-radius: 4px;
+    overflow: hidden; background: var(--surface);
+  }
+  .screenshot-frame img { display: block; width: 100%; height: auto; }
 
-.section p {
-  font-size: 14px;
-  font-weight: 300;
-  color: var(--label);
-  max-width: 580px;
-  line-height: 1.75;
-  margin-bottom: 16px;
-}
+  /* ── HOW IT WORKS ── */
+  .how { border-top: 1px solid var(--border); }
 
-/* ── Screenshot ──────────────────────────────────────── */
-.screenshot-wrap {
-  margin-top: 40px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-  display: inline-block;
-  max-width: 100%;
-}
+  .how-grid { display: grid; grid-template-columns: 1fr 1fr; max-width: 1100px; margin: 0 auto; }
 
-.screenshot-wrap img {
-  display: block;
-  max-width: 100%;
-  height: auto;
-}
+  .how-cell { padding: 5rem 3rem; border-right: 1px solid var(--border); }
+  .how-cell:last-child { border-right: none; }
 
-/* ── How it works ────────────────────────────────────── */
-.bands-grid {
-  display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  gap: 8px;
-  margin-top: 32px;
-}
+  .how-number {
+    font-family: var(--mono); font-size: 12px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--teal-dim); margin-bottom: 1.5rem;
+  }
 
-.band {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
+  .how-title {
+    font-family: var(--display); font-size: 40px;
+    letter-spacing: 0.02em; color: var(--text);
+    line-height: 1; margin-bottom: 1.5rem;
+  }
 
-.band-bar-wrap {
-  width: 100%;
-  height: 80px;
-  background: var(--bg-deep);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  display: flex;
-  align-items: flex-end;
-  padding: 4px;
-}
+  .how-body { font-size: 17px; line-height: 1.75; color: var(--muted); max-width: 400px; }
+  .how-body p + p { margin-top: 1em; }
 
-.band-bar {
-  width: 100%;
-  background: var(--teal);
-  border-radius: 2px;
-  opacity: 0.7;
-}
+  .algo-detail {
+    margin-top: 1.5rem; padding: 1rem 1.25rem;
+    background: var(--deep); border: 1px solid var(--border);
+    border-left: 2px solid var(--teal-dim); border-radius: 2px;
+  }
+  .algo-detail p {
+    font-family: var(--mono); font-size: 12px;
+    line-height: 1.75; color: var(--muted); letter-spacing: 0.03em;
+  }
 
-.band-label {
-  font-size: 9px;
-  font-family: var(--mono);
-  color: var(--dim);
-  letter-spacing: 0.04em;
-}
+  /* ── TECHNICAL SECTION ── */
+  .technical { border-top: 1px solid var(--border); background: var(--deep); }
 
-/* ── Divider ─────────────────────────────────────────── */
-.divider {
-  height: 1px;
-  background: var(--rule);
-  max-width: 900px;
-  margin: 0 auto;
-}
+  .technical-inner { max-width: 1100px; margin: 0 auto; padding: 5rem 3rem; }
 
-/* ── Footer ──────────────────────────────────────────── */
-footer {
-  background: var(--bg-deep);
-  border-top: 1px solid var(--rule);
-  padding: 40px 32px;
-}
+  .technical-header { margin-bottom: 4rem; }
 
-.footer-inner {
-  max-width: 900px;
-  margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 32px;
-  flex-wrap: wrap;
-}
+  .technical-title {
+    font-family: var(--display);
+    font-size: clamp(48px, 6vw, 80px);
+    letter-spacing: 0.02em; color: var(--text);
+    line-height: 0.95; margin-bottom: 1.25rem;
+  }
+  .technical-title .accent { color: var(--teal); }
 
-.footer-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-}
+  .technical-lead { font-size: 17px; color: var(--muted); max-width: 640px; line-height: 1.75; }
 
-.footer-wordmark {
-  font-size: 11px;
-  letter-spacing: 0.20em;
-  color: var(--dim);
-}
+  .subsection-label {
+    font-family: var(--mono); font-size: 12px;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--teal); border-bottom: 1px solid var(--border);
+    padding-bottom: 0.6rem; margin-bottom: 1.5rem;
+  }
 
-.footer-copy {
-  font-size: 11px;
-  font-weight: 300;
-  color: var(--dim);
-  line-height: 1.7;
-  max-width: 420px;
-}
+  /* Signal chain */
+  .chain-section { margin-bottom: 4rem; }
 
-.footer-copy a {
-  color: var(--label);
-  border-bottom: 1px solid var(--border);
-  transition: color 0.12s;
-}
-.footer-copy a:hover { color: var(--fg); }
+  .chain-copy { font-size: 17px; color: var(--muted); max-width: 700px; line-height: 1.75; margin-bottom: 2rem; }
 
-.footer-links {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+  .flow-row {
+    display: flex; align-items: center; gap: 0;
+    flex-wrap: nowrap; overflow-x: auto; padding-bottom: 0.5rem;
+  }
 
-.footer-link {
-  font-size: 11px;
-  letter-spacing: 0.10em;
-  color: var(--dim);
-  text-transform: uppercase;
-  transition: color 0.12s;
-}
-.footer-link:hover { color: var(--label); }
+  .block {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: 8px 14px;
+    text-align: center; white-space: nowrap; flex-shrink: 0;
+  }
+  .block .name { font-family: var(--mono); color: var(--text); font-size: 12px; font-weight: 500; }
+  .block .detail { font-family: var(--mono); color: var(--muted); font-size: 10px; margin-top: 3px; }
+  .block.teal { border-color: var(--teal); }
+  .block.teal .name { color: var(--teal); }
+  .block.red { border-color: var(--red); }
+  .block.red .name { color: var(--red); }
 
-/* ── Responsive ──────────────────────────────────────── */
-@media (max-width: 700px) {
-  .features { grid-template-columns: repeat(2, 1fr); }
-  .feature:nth-child(2) { border-right: none; }
-  .feature:nth-child(3) { border-top: 1px solid var(--rule); }
-  .feature:nth-child(4) { border-top: 1px solid var(--rule); border-right: none; }
-  .hero h1 { font-size: 30px; }
-  .bands-grid { grid-template-columns: repeat(4, 1fr); }
-  nav { padding: 0 16px; }
-  .nav-links .nav-link { display: none; }
-  .section { padding: 56px 20px; }
-}
+  .arrow { color: var(--muted); font-size: 16px; padding: 0 6px; flex-shrink: 0; font-family: var(--mono); }
 
-@media (max-width: 420px) {
-  .features { grid-template-columns: 1fr; }
-  .feature { border-right: none; border-top: 1px solid var(--rule); }
-  .feature:first-child { border-top: none; }
-}
+  .chain-annotation {
+    font-family: var(--mono); font-size: 11px;
+    color: var(--muted); margin-top: 1rem; letter-spacing: 0.04em;
+  }
 
+  /* Plots */
+  .plots-section { margin-bottom: 4rem; }
+
+  .plots-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; margin-top: 1.5rem; }
+
+  .plot-copy { font-size: 16px; color: var(--muted); line-height: 1.7; margin-bottom: 1rem; }
+
+  .plot-wrap {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 4px; padding: 16px 20px 12px;
+  }
+
+  .plot-title {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--muted); letter-spacing: 0.12em;
+    text-transform: uppercase; margin-bottom: 8px;
+  }
+
+  .legend { display: flex; gap: 16px; margin-top: 10px; flex-wrap: wrap; }
+
+  .legend-item {
+    display: flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 10px; color: var(--muted);
+  }
+
+  .swatch { width: 22px; height: 2px; flex-shrink: 0; }
+
+  /* Depth */
+  .depth-section { margin-bottom: 4rem; }
+
+  .depth-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; margin-top: 1.5rem; align-items: start; }
+
+  table { border-collapse: collapse; width: 100%; }
+  th, td { padding: 6px 10px; text-align: left; font-family: var(--mono); font-size: 12px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; }
+  td { color: var(--text); }
+  tr:last-child td { border-bottom: none; }
+
+  /* ── FORMULA SECTION ── */
+  .formula-section { border-top: 1px solid var(--border); }
+
+  .formula-inner { max-width: 1100px; margin: 0 auto; padding: 5rem 3rem; }
+
+  .formula-title {
+    font-family: var(--display); font-size: 48px;
+    letter-spacing: 0.02em; color: var(--text);
+    line-height: 1; margin-bottom: 1.5rem;
+  }
+
+  .formula-lead { font-size: 17px; color: var(--muted); max-width: 580px; line-height: 1.75; margin-bottom: 3rem; }
+
+  .formula-box {
+    background: var(--deep); border: 1px solid var(--border);
+    border-left: 3px solid var(--teal); border-radius: 4px;
+    padding: 1.5rem 2rem; margin-bottom: 1.5rem; max-width: 700px;
+  }
+
+  .formula-label {
+    font-family: var(--mono); font-size: 10px;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 0.75rem;
+  }
+
+  .formula-line {
+    font-family: var(--mono); font-size: 15px;
+    color: var(--teal); line-height: 2.2; letter-spacing: 0.03em;
+  }
+
+  .formula-comment {
+    font-family: var(--mono); font-size: 12px;
+    color: var(--muted); margin-top: 0.75rem;
+    line-height: 1.75; letter-spacing: 0.03em;
+    border-top: 1px solid var(--border); padding-top: 0.75rem;
+  }
+
+  .rms-note {
+    background: var(--deep); border: 1px solid var(--border);
+    border-left: 3px solid var(--amber); border-radius: 4px;
+    padding: 1.25rem 1.5rem; max-width: 700px;
+  }
+
+  .rms-note p { font-family: var(--mono); font-size: 13px; color: var(--muted); line-height: 1.8; letter-spacing: 0.03em; }
+  .rms-note strong { color: var(--amber); font-weight: 500; }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 2.5rem 3rem; max-width: 1100px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 1.5rem;
+  }
+
+  .footer-left {
+    font-family: var(--mono); font-size: 12px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); line-height: 1.9;
+  }
+
+  .footer-links { display: flex; gap: 1.5rem; list-style: none; }
+
+  .footer-links a {
+    font-family: var(--mono); font-size: 12px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--muted); transition: color 0.15s;
+  }
+  .footer-links a:hover { color: var(--text); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 800px) {
+    nav { padding: 0 1.5rem; }
+    .hero { padding: 120px 1.5rem 80px; }
+    #hero-logo { display: none; }
+    .specs { grid-template-columns: 1fr; }
+    .spec-cell { padding: 1.5rem; border-right: none; border-bottom: 1px solid var(--border); }
+    .screenshot-section { padding: 3rem 1.5rem; }
+    .how-grid { grid-template-columns: 1fr; }
+    .how-cell { padding: 3rem 1.5rem; border-right: none; border-bottom: 1px solid var(--border); }
+    .technical-inner { padding: 3rem 1.5rem; }
+    .plots-grid, .depth-grid { grid-template-columns: 1fr; }
+    .formula-inner { padding: 3rem 1.5rem; }
+    footer { padding: 2rem 1.5rem; }
+  }
 </style>
 </head>
 <body>
 
-<!-- ── Nav ──────────────────────────────────────────────── -->
 <nav>
   <div class="nav-brand">
-    <canvas id="nav-logo" width="24" height="24"></canvas>
-    <span class="nav-wordmark">DEVERB</span>
+    <canvas id="nav-logo" width="24" height="24" style="display:block"></canvas>
+    <span class="nav-logo-text">Deverb</span>
   </div>
-  <div class="nav-links">
-    <a href="#how-it-works" class="nav-link">How it works</a>
-    <a href="#download" class="nav-link">Download</a>
-    <a href="https://github.com/bbguitar/deverb" class="nav-gh" target="_blank" rel="noopener">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-        <path d="M8 1C4.134 1 1 4.134 1 8c0 3.09 2.006 5.713 4.788 6.637.35.065.478-.151.478-.337 0-.166-.006-.606-.009-1.19-1.947.424-2.358-.939-2.358-.939-.318-.809-.777-1.024-.777-1.024-.635-.434.048-.425.048-.425.702.049 1.072.72 1.072.72.624 1.069 1.637.76 2.037.582.063-.452.244-.76.444-.935-1.554-.177-3.188-.777-3.188-3.46 0-.764.273-1.39.72-1.88-.072-.177-.312-.89.069-1.854 0 0 .587-.188 1.923.716A6.7 6.7 0 0 1 8 4.979c.595.003 1.194.08 1.754.236 1.333-.904 1.919-.716 1.919-.716.382.965.141 1.677.069 1.854.448.49.719 1.116.719 1.88 0 2.69-1.637 3.281-3.196 3.454.251.217.475.644.475 1.298 0 .937-.008 1.693-.008 1.923 0 .187.126.405.481.337C12.996 13.71 15 11.089 15 8c0-3.866-3.134-7-7-7z" fill="currentColor"/>
-      </svg>
-      GitHub
-    </a>
-  </div>
+  <ul class="nav-links">
+    <li><a href="#how-it-works">How it works</a></li>
+    <li><a href="#technical">Technical</a></li>
+    <li><a href="https://github.com/bbguitar/deverb/releases/latest">Download</a></li>
+    <li><a href="https://github.com/bbguitar/deverb">GitHub</a></li>
+  </ul>
 </nav>
 
-<!-- ── Hero ─────────────────────────────────────────────── -->
 <section class="hero">
-  <div class="hero-logo-wrap">
-    <canvas id="hero-logo" width="120" height="120"></canvas>
+  <p class="hero-eyebrow">Multiband spectral dereverberation</p>
+  <div class="hero-headline-row">
+    <h1 class="hero-headline">
+      Remove the room.<br>
+      <span class="accent">Keep the signal.</span>
+    </h1>
   </div>
-  <h1>Remove the room.<br><span class="accent">Keep the signal.</span></h1>
-  <p class="hero-sub">Multiband spectral dereverberation across eight perceptually-spaced frequency bands. Surgical room-acoustic removal for dialogue, voiceover, and location audio.</p>
-  <div class="cta-row" id="download">
-    <a href="https://github.com/bbguitar/deverb/releases/latest" class="btn-primary" target="_blank" rel="noopener">
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-        <path d="M8 2v9M4 8l4 4 4-4M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      macOS — VST3 + AU
-    </a>
-    <a href="https://github.com/bbguitar/deverb/releases/latest" class="btn-primary" target="_blank" rel="noopener">
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-        <path d="M8 2v9M4 8l4 4 4-4M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      Windows — VST3
-    </a>
-    <a href="https://github.com/bbguitar/deverb" class="btn-secondary" target="_blank" rel="noopener">Source</a>
+  <p class="hero-sub">Your room, hall, or cathedral is in the recording. Deverb takes it out.<br><br>Eight frequency bands, each one independent — you choose how hard to push the reverb suppression in each range rather than smearing the whole signal to fix a mid-range problem. No impulse response measurement, no setup ritual, just put Deverb on your track and start tweaking.</p>
+  <div class="hero-actions">
+    <a href="https://github.com/bbguitar/deverb/releases/latest" class="btn-primary">↓ macOS — VST3 + AU</a>
+    <a href="https://github.com/bbguitar/deverb/releases/latest" class="btn-secondary">↓ Windows — VST3</a>
+    <a href="https://github.com/bbguitar/deverb" class="btn-secondary">Source</a>
   </div>
-  <p class="hero-note">Free and unsigned &mdash; use at your own risk</p>
+  <p class="hero-note">Free and unsigned — macOS: approve in System Settings › Privacy &amp; Security</p>
 </section>
 
-<!-- ── Feature strip ─────────────────────────────────────── -->
-<div class="features">
-  <div class="feature">
-    <div class="feature-title">8 Bands</div>
-    <div class="feature-body">125 Hz–16 kHz. Each band operates independently with its own depth control.</div>
+<div class="specs">
+  <div class="spec-cell">
+    <p class="spec-label">Formats</p>
+    <p class="spec-value">VST3 · AU</p>
+    <p class="spec-detail">macOS arm64 + x86_64 · Win x64</p>
   </div>
-  <div class="feature">
-    <div class="feature-title">VST3 · AU</div>
-    <div class="feature-body">macOS universal (arm64 + x86_64). Windows x64 VST3.</div>
-  </div>
-  <div class="feature">
-    <div class="feature-title">Postfish DSP</div>
-    <div class="feature-body">Algorithm from <a href="https://github.com/ePirat/Postfish" style="color:var(--label);border-bottom:1px solid var(--border)">Xiph.Org's Postfish</a> suite. Spectral estimation, not learned.</div>
-  </div>
-  <div class="feature">
-    <div class="feature-title">Free</div>
-    <div class="feature-body">GPL-licensed. No activation, no account, no telemetry.</div>
+  <div class="spec-cell">
+    <p class="spec-label">Algorithm</p>
+    <p class="spec-value">Postfish</p>
+    <p class="spec-detail">Spectral estimation — not learned</p>
   </div>
 </div>
 
-<!-- ── Screenshot ────────────────────────────────────────── -->
-<div class="section" id="how-it-works">
-  <div class="section-label">The plugin</div>
-  <h2>Eight bands, one control set</h2>
-  <p>Each frequency band has an independent depth fader — 1× is off, 5× is maximum suppression. The Smooth control sets the analysis window length; Release controls how fast the suppression tracks the reverb tail. Leave most bands flat and only suppress the bands where the room is most audible.</p>
-  <div class="screenshot-wrap">
-    <img src="deverb-screenshot.png" alt="Deverb plugin UI showing eight frequency band faders" width="640">
+<section class="screenshot-section">
+  <p class="section-eyebrow">Plugin</p>
+  <div class="screenshot-frame">
+    <img src="https://bbguitar.github.io/deverb/deverb-screenshot.png" alt="Deverb plugin UI showing eight frequency band faders">
   </div>
-</div>
+</section>
 
-<div class="divider"></div>
-
-<!-- ── How it works ──────────────────────────────────────── -->
-<div class="section">
-  <div class="section-label">Algorithm</div>
-  <h2>Spectral dereverberation</h2>
-  <p>The plugin splits the signal into eight bark-spaced subbands, then applies spectral subtraction within each band to estimate and remove the reverberant component. Analysis windows compute the envelope of the reverb tail; the suppression gain tracks it in real time.</p>
-  <p>Unlike convolution-based approaches, this operates on the statistics of the incoming signal — no impulse response measurement required. The algorithm is the deverb module from Monty's Postfish codebase (Xiph.Org, 2002–2005), wrapped in an iPlug2 plugin with FFTW3 for the spectral processing.</p>
-
-  <div class="bands-grid" aria-hidden="true">
-    <div class="band">
-      <div class="band-bar-wrap"><div class="band-bar" style="height:55%"></div></div>
-      <div class="band-label">125</div>
-    </div>
-    <div class="band">
-      <div class="band-bar-wrap"><div class="band-bar" style="height:70%"></div></div>
-      <div class="band-label">250</div>
-    </div>
-    <div class="band">
-      <div class="band-bar-wrap"><div class="band-bar" style="height:85%"></div></div>
-      <div class="band-label">500</div>
-    </div>
-    <div class="band">
-      <div class="band-bar-wrap"><div class="band-bar" style="height:90%"></div></div>
-      <div class="band-label">1k</div>
-    </div>
-    <div class="band">
-      <div class="band-bar-wrap"><div class="band-bar" style="height:90%"></div></div>
-      <div class="band-label">2k</div>
-    </div>
-    <div class="band">
-      <div class="band-bar-wrap"><div class="band-bar" style="height:85%"></div></div>
-      <div class="band-label">4k</div>
-    </div>
-    <div class="band">
-      <div class="band-bar-wrap"><div class="band-bar" style="height:70%"></div></div>
-      <div class="band-label">8k</div>
-    </div>
-    <div class="band">
-      <div class="band-bar-wrap"><div class="band-bar" style="height:50%"></div></div>
-      <div class="band-label">16k</div>
-    </div>
-  </div>
-</div>
-
-<!-- ── Footer ────────────────────────────────────────────── -->
-<footer>
-  <div class="footer-inner">
-    <div>
-      <div class="footer-brand">
-        <canvas id="footer-logo" width="20" height="20"></canvas>
-        <span class="footer-wordmark">DEVERB · POSTFISH · WWMEDIA</span>
+<section class="how" id="how-it-works">
+  <div class="how-grid">
+    <div class="how-cell">
+      <p class="how-number">01 — Controls</p>
+      <h2 class="how-title">Eight bands, one control set</h2>
+      <div class="how-body">
+        <p>Each frequency band has an independent depth fader. 1× is off; 5× is maximum suppression. The Smooth control sets the analysis window length. Release controls how fast suppression tracks the reverb tail.</p>
+        <p>Leave most bands flat and only suppress where the room is most audible. A vocal in a small tiled bathroom will typically show excess energy in the 500 Hz–2 kHz range — start there.</p>
       </div>
-      <p class="footer-copy">
-        Plugin built with <a href="https://github.com/iPlug2/iPlug2" target="_blank" rel="noopener">iPlug2</a>.
-        DSP algorithm from <a href="https://github.com/ePirat/Postfish" target="_blank" rel="noopener">Postfish</a> by Monty and Xiph.Org.
-        Binaries are unsigned — macOS will require approving in System Settings &rsaquo; Privacy &amp; Security.
-        All respective source licences apply.
+    </div>
+    <div class="how-cell">
+      <p class="how-number">02 — Algorithm</p>
+      <h2 class="how-title">Spectral dereverberation</h2>
+      <div class="how-body">
+        <p>Deverb estimates and subtracts reverberant energy across eight frequency-spaced bands. You set the suppression depth per band and leave it. No measurement pass, no cloud round-trip, nothing to sign up for.</p>
+        <div class="algo-detail">
+          <p>The DSP is Monty's deverb algorithm from the Postfish codebase — GPL, open, and has been doing this job since 2002. Wrapped in iPlug2 with FFTW3 for the spectral processing.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- THE REALLY TECHNICAL BIT -->
+<section class="technical" id="technical">
+  <div class="technical-inner">
+
+    <div class="technical-header">
+      <h2 class="technical-title">The Really<br><span class="accent">Technical Bit</span></h2>
+      <p class="technical-lead">Recorded somewhere you shouldn't have? Deverb reduces the room without touching the dry signal. It reads the reverb tail in real time and subtracts it — no IR capture, no cloud processing, no account. Works on dialogue, voiceover, location audio, drums. The kind of fix you want to be invisible.</p>
+    </div>
+
+    <div class="chain-section">
+      <p class="subsection-label">Signal chain</p>
+      <p class="chain-copy">The incoming audio accumulates in an input FIFO until a full 2,048-sample block is available. A Hann window is applied to minimise spectral leakage before the FFT. The spectrum is split into eight bark-spaced subbands, each processed by an independent gain stage, then reconstructed via IFFT and 50% overlap-add back into the time domain. The FIFO pair decouples the plugin's internal block size from the DAW's buffer size, so it works correctly at any session buffer setting.</p>
+      <div class="flow-row">
+        <div class="block"><div class="name">DAW Input</div><div class="detail">double**, N frames</div></div>
+        <div class="arrow">→</div>
+        <div class="block"><div class="name">Input FIFO</div><div class="detail">accumulate to 2 048</div></div>
+        <div class="arrow">→</div>
+        <div class="block teal"><div class="name">Hann Window + FFT</div><div class="detail">fftwf · 2 048-pt real → complex</div></div>
+        <div class="arrow">→</div>
+        <div class="block teal"><div class="name">8-Band Split</div><div class="detail">subband_read()</div></div>
+        <div class="arrow">→</div>
+        <div class="block red"><div class="name">Per-Band Gain</div><div class="detail">doWork() callback</div></div>
+        <div class="arrow">→</div>
+        <div class="block teal"><div class="name">IFFT + Overlap-Add</div><div class="detail">50% overlap, ×2 latency</div></div>
+        <div class="arrow">→</div>
+        <div class="block"><div class="name">Output FIFO</div><div class="detail">drain N frames</div></div>
+        <div class="arrow">→</div>
+        <div class="block"><div class="name">DAW Output</div><div class="detail">double**, N frames</div></div>
+      </div>
+      <p class="chain-annotation">Latency ≈ 93 ms at 44.1 kHz &nbsp;·&nbsp; FIFO pairs decouple plugin block size from DAW buffer size</p>
+    </div>
+
+    <div class="plots-section">
+      <p class="subsection-label">Envelope tracking &amp; gain control</p>
+      <div class="plots-grid">
+        <div>
+          <p class="plot-copy">Within each subband, two envelope followers track the signal power — a fast follower (Bessel IIR, attack-tracking) that responds to direct sound transients, and a slow follower (release-only) that hangs on the reverb tail. The shaded region marks where the slow envelope exceeds the fast — the zone where suppression is active.</p>
+          <div class="plot-wrap">
+            <p class="plot-title">Signal power + dual envelopes (dB)</p>
+            <canvas id="cEnv" width="460" height="160" style="width:100%;height:auto;display:block"></canvas>
+            <div class="legend">
+              <div class="legend-item"><div class="swatch" style="background:#8090a0"></div>instantaneous power x²</div>
+              <div class="legend-item"><div class="swatch" style="background:#22bfbf"></div>fast IIR (smooth τ)</div>
+              <div class="legend-item"><div class="swatch" style="background:#bf4040"></div>slow IIR (release τ)</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <p class="plot-copy">The resulting gain is clamped to reduction only — the algorithm never boosts. At depth 1.7×, the peak suppression during a typical reverb tail is around 5–8 dB. The gain returns to 0 dB as the fast and slow envelopes converge, which is what gives the natural-sounding release rather than an abrupt cut.</p>
+          <div class="plot-wrap">
+            <p class="plot-title">Gain reduction over time (depth = 1.7×)</p>
+            <canvas id="cGain" width="460" height="160" style="width:100%;height:auto;display:block"></canvas>
+            <div class="legend">
+              <div class="legend-item"><div class="swatch" style="background:#c09030"></div>gain (dB)</div>
+              <div class="legend-item"><div class="swatch" style="background:#40bf8055;height:8px;border-radius:1px"></div>0 dB</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="depth-section">
+      <p class="subsection-label">Depth response</p>
+      <div class="depth-grid">
+        <div>
+          <p class="plot-copy">Each of the five depth settings produces a different suppression slope. At 1×, no reduction is applied — the plugin is effectively bypassed. At 5×, a 30 dB reverberant delta drives approximately 30 dB of suppression. The response is linear in dB space: double the delta, double the reduction. In practice, most material sounds best between 1.5× and 2.5×, where suppression is audible but artefacts remain below the noise floor.</p>
+          <div class="plot-wrap" style="margin-top:1.5rem">
+            <p class="plot-title">Suppression vs. reverberant delta (ΔdB)</p>
+            <canvas id="cDepth" width="460" height="200" style="width:100%;height:auto;display:block"></canvas>
+            <div class="legend" id="depth-legend"></div>
+          </div>
+        </div>
+        <div>
+          <p class="plot-copy" style="margin-bottom:1rem">Maximum gain reduction at each depth setting, computed at a 30 dB reverberant delta.</p>
+          <table>
+            <thead><tr><th>Depth</th><th>Ratio</th><th>multEnd</th><th>Max reduction</th></tr></thead>
+            <tbody id="depth-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- PER-BAND GAIN COMPUTATION SECTION -->
+<section class="formula-section" style="border-bottom: 1px solid var(--border);">
+  <div class="formula-inner">
+    <h2 class="formula-title">Per-band Gain Computation</h2>
+    <p class="formula-lead">Inside <code style="font-family:var(--mono);font-size:0.85em;color:var(--teal)">doWork()</code>, each subband runs the same sequence: square the input to get instantaneous power, feed it into both IIR followers, convert to dB, subtract, scale by depth, convert back, clamp to ≤1, and multiply the band. All in one callback per FFT frame.</p>
+
+    <div style="background:var(--deep); border:1px solid var(--border); border-radius:4px; padding:1.25rem 1.25rem 1rem; overflow-x:auto;">
+      <p class="plot-title" style="margin-bottom:0.75rem">doWork() — per-band gain path</p>
+      <svg width="100%" viewBox="0 0 800 200" xmlns="http://www.w3.org/2000/svg" style="display:block;min-width:600px">
+        <defs>
+          <marker id="a2" viewBox="0 0 6 6" refX="5" refY="3" markerWidth="4" markerHeight="4" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#6e7a86"/>
+          </marker>
+          <marker id="a2t" viewBox="0 0 6 6" refX="5" refY="3" markerWidth="4" markerHeight="4" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#22bfbf"/>
+          </marker>
+          <marker id="a2r" viewBox="0 0 6 6" refX="5" refY="3" markerWidth="4" markerHeight="4" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#bf4040"/>
+          </marker>
+        </defs>
+
+        <!-- Band signal input -->
+        <rect x="4" y="80" width="70" height="40" rx="3" fill="#23272e" stroke="#2e3440"/>
+        <text x="39" y="97" font-size="8.5" fill="#d8dee9" text-anchor="middle" font-family="monospace">band[n]</text>
+        <text x="39" y="110" font-size="8" fill="#6e7a86" text-anchor="middle" font-family="monospace">mSS.lap[i][ch]</text>
+
+        <line x1="74" y1="100" x2="110" y2="100" stroke="#6e7a86" marker-end="url(#a2)"/>
+
+        <!-- Square -->
+        <rect x="110" y="82" width="54" height="36" rx="3" fill="#23272e" stroke="#2e3440"/>
+        <text x="137" y="97" font-size="9" fill="#d8dee9" text-anchor="middle" font-family="monospace">x[k]²</text>
+        <text x="137" y="110" font-size="8" fill="#6e7a86" text-anchor="middle" font-family="monospace">power</text>
+
+        <!-- Fork -->
+        <line x1="164" y1="100" x2="190" y2="100" stroke="#6e7a86"/>
+        <line x1="190" y1="100" x2="190" y2="50"  stroke="#22bfbf"/>
+        <line x1="190" y1="100" x2="190" y2="150" stroke="#bf4040"/>
+
+        <!-- FAST IIR -->
+        <line x1="190" y1="50" x2="230" y2="50" stroke="#22bfbf" marker-end="url(#a2t)"/>
+        <rect x="230" y="30" width="120" height="40" rx="3" fill="#1a2830" stroke="#22bfbf"/>
+        <text x="290" y="47" font-size="8.5" fill="#22bfbf" text-anchor="middle" font-family="monospace">FAST IIR (Bessel)</text>
+        <text x="290" y="60" font-size="8" fill="#6e7a86" text-anchor="middle" font-family="monospace">freefall_limited  τ=smooth_ms</text>
+
+        <!-- SLOW IIR -->
+        <line x1="190" y1="150" x2="230" y2="150" stroke="#bf4040" marker-end="url(#a2r)"/>
+        <rect x="230" y="130" width="120" height="40" rx="3" fill="#1a1015" stroke="#bf4040"/>
+        <text x="290" y="147" font-size="8.5" fill="#bf4040" text-anchor="middle" font-family="monospace">SLOW IIR (Bessel)</text>
+        <text x="290" y="160" font-size="8" fill="#6e7a86" text-anchor="middle" font-family="monospace">freefallonly1   τ=release_ms</text>
+
+        <!-- todB -->
+        <line x1="350" y1="50"  x2="400" y2="50"  stroke="#22bfbf" marker-end="url(#a2t)"/>
+        <line x1="350" y1="150" x2="400" y2="150" stroke="#bf4040" marker-end="url(#a2r)"/>
+
+        <rect x="400" y="32" width="52" height="36" rx="3" fill="#23272e" stroke="#22bfbf"/>
+        <text x="426" y="52" font-size="8.5" fill="#22bfbf" text-anchor="middle" font-family="monospace">todB_a()</text>
+
+        <rect x="400" y="132" width="52" height="36" rx="3" fill="#23272e" stroke="#bf4040"/>
+        <text x="426" y="152" font-size="8.5" fill="#bf4040" text-anchor="middle" font-family="monospace">todB_a()</text>
+
+        <!-- Subtract -->
+        <line x1="452" y1="50"  x2="510" y2="50"  stroke="#22bfbf"/>
+        <line x1="452" y1="150" x2="510" y2="150" stroke="#bf4040"/>
+        <line x1="510" y1="50"  x2="510" y2="150" stroke="#6e7a86"/>
+        <rect x="496" y="83" width="28" height="34" rx="14" fill="#23272e" stroke="#2e3440"/>
+        <text x="510" y="104" font-size="11" fill="#d8dee9" text-anchor="middle" font-family="monospace">−</text>
+
+        <line x1="524" y1="100" x2="555" y2="100" stroke="#6e7a86" marker-end="url(#a2)"/>
+
+        <!-- × 0.5 × multEnd -->
+        <rect x="555" y="82" width="80" height="36" rx="3" fill="#23272e" stroke="#c09030"/>
+        <text x="595" y="97" font-size="8.5" fill="#c09030" text-anchor="middle" font-family="monospace">× 0.5 × multEnd</text>
+        <text x="595" y="110" font-size="8" fill="#6e7a86" text-anchor="middle" font-family="monospace">depth scaling</text>
+
+        <line x1="635" y1="100" x2="658" y2="100" stroke="#6e7a86" marker-end="url(#a2)"/>
+
+        <!-- fromdB + clamp -->
+        <rect x="658" y="82" width="72" height="36" rx="3" fill="#23272e" stroke="#2e3440"/>
+        <text x="694" y="97" font-size="8.5" fill="#d8dee9" text-anchor="middle" font-family="monospace">fromdB_a()</text>
+        <text x="694" y="110" font-size="8" fill="#6e7a86" text-anchor="middle" font-family="monospace">clamp g &lt; 1</text>
+
+        <line x1="730" y1="100" x2="752" y2="100" stroke="#6e7a86" marker-end="url(#a2)"/>
+
+        <!-- Output -->
+        <rect x="752" y="80" width="46" height="40" rx="3" fill="#1a2520" stroke="#40bf80"/>
+        <text x="775" y="97" font-size="8.5" fill="#40bf80" text-anchor="middle" font-family="monospace">band[n]</text>
+        <text x="775" y="110" font-size="8" fill="#6e7a86" text-anchor="middle" font-family="monospace">× g[k]</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- STATE MACHINE SECTION -->
+<section class="formula-section" style="border-bottom: 1px solid var(--border);">
+  <div class="formula-inner">
+    <h2 class="formula-title">Per-band State Machine</h2>
+    <p class="formula-lead">Each band cycles through three states depending on whether its depth fader is active. A two-frame priming delay prevents the IIR followers from applying gain before they have had time to stabilise — avoiding the click or zipper noise that would otherwise occur when a band is switched on.</p>
+
+    <div style="background:var(--deep); border:1px solid var(--border); border-radius:4px; padding:1.25rem 1.25rem 1rem; margin-bottom:1.5rem; overflow-x:auto;">
+      <p class="plot-title" style="margin-bottom:0.75rem">inactiveDelay state transitions</p>
+      <svg width="100%" viewBox="0 0 700 150" xmlns="http://www.w3.org/2000/svg" style="display:block;min-width:500px">
+        <defs>
+          <marker id="a3" viewBox="0 0 6 6" refX="5" refY="3" markerWidth="4" markerHeight="4" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#6e7a86"/>
+          </marker>
+        </defs>
+
+        <!-- State: OFF -->
+        <rect x="20"  y="45" width="130" height="44" rx="4" fill="#23272e" stroke="#2e3440"/>
+        <text x="85"  y="63" font-size="8" fill="#d8dee9" text-anchor="middle" font-family="monospace">OFF</text>
+        <text x="85"  y="75" font-size="7" fill="#6e7a86" text-anchor="middle" font-family="monospace">ratio=1000, multEnd=0</text>
+        <text x="85"  y="85" font-size="7" fill="#6e7a86" text-anchor="middle" font-family="monospace">IIR reset, skip</text>
+
+        <line x1="150" y1="67" x2="210" y2="67" stroke="#6e7a86" marker-end="url(#a3)"/>
+        <text x="180" y="60" font-size="7" fill="#c09030" text-anchor="middle" font-family="monospace">depth &gt; 1×</text>
+
+        <!-- State: PRIMING -->
+        <rect x="210" y="45" width="130" height="44" rx="4" fill="#1a2030" stroke="#c09030"/>
+        <text x="275" y="63" font-size="8" fill="#c09030" text-anchor="middle" font-family="monospace">PRIMING</text>
+        <text x="275" y="75" font-size="7" fill="#6e7a86" text-anchor="middle" font-family="monospace">inactiveDelay-- (2→0)</text>
+        <text x="275" y="85" font-size="7" fill="#6e7a86" text-anchor="middle" font-family="monospace">multEnd=0, fade in</text>
+
+        <line x1="340" y1="67" x2="400" y2="67" stroke="#6e7a86" marker-end="url(#a3)"/>
+        <text x="370" y="60" font-size="7" fill="#22bfbf" text-anchor="middle" font-family="monospace">2 frames</text>
+
+        <!-- State: ACTIVE -->
+        <rect x="400" y="45" width="130" height="44" rx="4" fill="#1a2830" stroke="#22bfbf"/>
+        <text x="465" y="63" font-size="8" fill="#22bfbf" text-anchor="middle" font-family="monospace">ACTIVE</text>
+        <text x="465" y="75" font-size="7" fill="#6e7a86" text-anchor="middle" font-family="monospace">multEnd = 1−1000/ratio</text>
+        <text x="465" y="85" font-size="7" fill="#6e7a86" text-anchor="middle" font-family="monospace">full gain reduction</text>
+
+        <line x1="530" y1="67" x2="590" y2="67" stroke="#6e7a86" marker-end="url(#a3)"/>
+        <text x="560" y="60" font-size="7" fill="#bf4040" text-anchor="middle" font-family="monospace">depth = 1×</text>
+
+        <!-- State: OFF (return) -->
+        <rect x="590" y="45" width="88" height="44" rx="4" fill="#23272e" stroke="#2e3440"/>
+        <text x="634" y="63" font-size="8" fill="#d8dee9" text-anchor="middle" font-family="monospace">OFF</text>
+        <text x="634" y="75" font-size="7" fill="#6e7a86" text-anchor="middle" font-family="monospace">IIR reset</text>
+        <text x="634" y="85" font-size="7" fill="#6e7a86" text-anchor="middle" font-family="monospace">skip</text>
+
+        <!-- Annotation — split across two lines -->
+        <text x="20" y="112" font-size="7" fill="#506070" font-family="monospace">multEnd interpolates linearly over N=2048 samples on any ratio change —</text>
+        <text x="20" y="123" font-size="7" fill="#506070" font-family="monospace">parameter transitions are always smoothed, never stepped.</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- FORMULA SECTION -->
+<section class="formula-section">
+  <div class="formula-inner">
+    <h2 class="formula-title">The Gain Formula</h2>
+    <p class="formula-lead">The suppression gain applied to each subband at each frame reduces to a single expression. It combines the envelope delta, a linear depth mapping, and a clamp that enforces reduction-only behaviour.</p>
+
+    <div class="formula-box">
+      <p class="formula-label">Per-band suppression gain</p>
+      <div class="formula-line">
+        G[n] = 0.5 × (todB(slow[n]) − todB(fast[n])) × multEnd<br>
+        multEnd &nbsp;= 1 − depth<br>
+        todB(x) &nbsp;= 10 × log₁₀(x)<br>
+        G[n] &nbsp;&nbsp;&nbsp;&nbsp; = min(G[n], 0)
+      </div>
+      <p class="formula-comment">
+        slow[n], fast[n] — power envelope values (amplitude²) at frame n<br>
+        depth — fader value 1× to 5× &nbsp;·&nbsp; multEnd is negative for depth &gt; 1, giving reduction<br>
+        Final clamp ensures G[n] ≤ 0 dB at all times
       </p>
     </div>
-    <div class="footer-links">
-      <a href="https://github.com/bbguitar/deverb/releases/latest" class="footer-link" target="_blank" rel="noopener">Download</a>
-      <a href="https://github.com/bbguitar/deverb" class="footer-link" target="_blank" rel="noopener">Source</a>
-      <a href="https://github.com/bbguitar/deverb/issues" class="footer-link" target="_blank" rel="noopener">Issues</a>
+
+    <div class="rms-note">
+      <p><strong>Why x²?</strong> &nbsp; The envelope followers operate on <strong>power</strong> — amplitude squared. Since todB(x) = 10 × log₁₀(x) and x here is already amplitude², this is equivalent to computing 20 × log₁₀(amplitude): <strong>the gain is derived from RMS amplitude in dB</strong>. The x² is not incidental — it places the suppression decision in the perceptually correct domain where equal dB steps correspond to equal perceived loudness changes, giving the algorithm its subjectively smooth behaviour.</p>
     </div>
   </div>
+</section>
+
+<footer>
+  <div class="footer-left">
+    Deverb · Postfish DSP<br>
+    iPlug2 · FFTW3 · Xiph.Org
+  </div>
+  <ul class="footer-links">
+    <li><a href="https://github.com/bbguitar/deverb/releases/latest">Download</a></li>
+    <li><a href="https://github.com/bbguitar/deverb">Source</a></li>
+    <li><a href="https://github.com/bbguitar/deverb/issues">Issues</a></li>
+  </ul>
 </footer>
 
 <script>
+// ── Logo (from logo-preview.html) ────────────────────────────────────────────
 const TEAL = '#22bfbf';
 const DIM  = 'rgba(110,122,134,0.86)';
 
-function drawLogo(canvas) {
-  const S   = canvas.width;
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, S, S);
-
-  const pad      = S * 0.10;
+function drawLogo(ctx, S) {
+  const pad = S * 0.10;
   const L = pad, T = pad, R = S - pad, B = S - pad;
-  const H        = B - T;
-  const spikeX   = L + (R - L) * 0.08;
-  const spikeW   = Math.max(1, S * 0.045);
+  const W = R - L, H = B - T;
+  const spikeX = L + W * 0.08;
+
+  ctx.strokeStyle = TEAL;
+  ctx.lineWidth   = Math.max(1, S * 0.045);
+  ctx.lineCap     = 'round';
+  ctx.beginPath();
+  ctx.moveTo(spikeX, B);
+  ctx.lineTo(spikeX, T);
+  ctx.stroke();
+
   const barCount = Math.max(4, Math.round(S * 0.12));
   const barStart = spikeX + S * 0.07;
   const barEnd   = R - S * 0.02;
   const barSpan  = barEnd - barStart;
-  const barW     = Math.max(0.8, S * 0.025);
 
-  ctx.lineCap = 'round';
+  ctx.strokeStyle = DIM;
+  ctx.lineWidth   = Math.max(0.8, S * 0.025);
+  ctx.lineCap     = 'round';
 
   for (let i = 0; i < barCount; i++) {
     const t = i / (barCount - 1);
     const x = barStart + t * barSpan;
     const h = H * 0.82 * Math.pow(0.72, i);
-    ctx.strokeStyle = DIM;
-    ctx.lineWidth   = barW;
-    ctx.beginPath(); ctx.moveTo(x, B); ctx.lineTo(x, B - h); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, B);
+    ctx.lineTo(x, B - h);
+    ctx.stroke();
   }
-
-  ctx.strokeStyle = TEAL;
-  ctx.lineWidth   = spikeW;
-  ctx.beginPath(); ctx.moveTo(spikeX, B); ctx.lineTo(spikeX, T); ctx.stroke();
 }
 
-['nav-logo', 'hero-logo', 'footer-logo'].forEach(id => {
-  const c = document.getElementById(id);
-  if (c) drawLogo(c);
-});
+drawLogo(document.getElementById('nav-logo').getContext('2d'), 24);
+
+// Hero logo — sized to match h1 height, redrawn on resize
+function sizeHeroLogo() {
+  const h1     = document.querySelector('.hero-headline');
+  const canvas = document.getElementById('hero-logo');
+  if (!h1 || !canvas) return;
+  const h = h1.offsetHeight;
+  if (h < 10) return;
+  canvas.width       = h;
+  canvas.height      = h;
+  canvas.style.width  = h + 'px';
+  canvas.style.height = h + 'px';
+  drawLogo(canvas.getContext('2d'), h);
+}
+
+document.fonts.ready.then(sizeHeroLogo);
+if (window.ResizeObserver) {
+  new ResizeObserver(sizeHeroLogo).observe(document.querySelector('.hero-headline'));
+}
+
+// ── Plot helpers (from DeverbDSP algorithm) ───────────────────────────────────
+const todB   = x => Math.log(x * x + 1e-30) * 4.34294480;
+const fromdB = x => Math.exp(x * 0.11512925);
+
+function simulateEnvelopes(N, smoothMs, releaseMs, sr) {
+  const power = new Float32Array(N);
+  const decayRate = Math.exp(-1 / (0.18 * sr));
+  let env = 0;
+  for (let i = 0; i < N; i++) {
+    const x = i === 50 ? 1.0 : i < 50 ? 0.0 : (i < 80 ? 0.6 * Math.random() : 0);
+    env = env * decayRate + Math.abs(x) * (1 - decayRate);
+    const noise = 0.004 * Math.random();
+    power[i] = (x + env * 0.9 + noise) ** 2;
+  }
+  const alphaS = 500 / smoothMs  / sr;
+  const alphaR = 500 / releaseMs / sr;
+  const fast = new Float32Array(N);
+  const slow = new Float32Array(N);
+  let fs = 0, ss = 0;
+  for (let i = 0; i < N; i++) {
+    const p = power[i];
+    if (p > fs) fs = p; else fs = fs * (1 - alphaS * 2) + p * (alphaS * 2);
+    fast[i] = fs;
+    if (p > ss) ss = p; else ss = ss * (1 - alphaR * 0.4);
+    slow[i] = ss;
+  }
+  return { power, fast, slow };
+}
+
+// ── Envelope plot ─────────────────────────────────────────────────────────────
+function drawEnvelope() {
+  const c = document.getElementById('cEnv');
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  const pad = { l:44, r:10, t:10, b:24 };
+  const pw = W-pad.l-pad.r, ph = H-pad.t-pad.b;
+
+  const sr=441, N=400;
+  const { power, fast, slow } = simulateEnvelopes(N, 40, 400, sr);
+
+  ctx.fillStyle='#23272e'; ctx.fillRect(0,0,W,H);
+
+  const minDB=-60, maxDB=10;
+  const scaleY = v => pad.t + ph*(1-(todB(Math.sqrt(v))-minDB)/(maxDB-minDB));
+  const scaleX = i => pad.l + (i/N)*pw;
+
+  ctx.strokeStyle='#2e3440'; ctx.lineWidth=0.5;
+  for (let db=-50; db<=0; db+=10) {
+    const y = pad.t + ph*(1-(db-minDB)/(maxDB-minDB));
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+pw,y); ctx.stroke();
+    ctx.fillStyle='#6e7a86'; ctx.font='9px monospace'; ctx.textAlign='right';
+    ctx.fillText(db+'dB', pad.l-4, y+3);
+  }
+  ctx.fillStyle='#6e7a86'; ctx.textAlign='center';
+  ctx.fillText('time →', pad.l+pw/2, H-5);
+
+  // Shade suppression region
+  ctx.beginPath();
+  let open=false;
+  for (let i=0; i<N; i++) {
+    if (slow[i]>fast[i]) {
+      if (!open) { ctx.moveTo(scaleX(i), scaleY(fast[i])); open=true; }
+      ctx.lineTo(scaleX(i), scaleY(slow[i]));
+    }
+  }
+  for (let i=N-1; i>=0; i--) { if (slow[i]>fast[i]) ctx.lineTo(scaleX(i), scaleY(fast[i])); }
+  ctx.closePath(); ctx.fillStyle='rgba(191,64,64,0.12)'; ctx.fill();
+
+  // Instantaneous power x²
+  ctx.beginPath(); ctx.strokeStyle='#8090a0'; ctx.lineWidth=1;
+  for (let i=0; i<N; i++) { const y=scaleY(power[i]); i===0?ctx.moveTo(scaleX(i),y):ctx.lineTo(scaleX(i),y); }
+  ctx.stroke();
+
+  // Slow IIR
+  ctx.beginPath(); ctx.strokeStyle='#bf4040'; ctx.lineWidth=1.8;
+  for (let i=0; i<N; i++) { const y=scaleY(slow[i]); i===0?ctx.moveTo(scaleX(i),y):ctx.lineTo(scaleX(i),y); }
+  ctx.stroke();
+
+  // Fast IIR
+  ctx.beginPath(); ctx.strokeStyle='#22bfbf'; ctx.lineWidth=1.8;
+  for (let i=0; i<N; i++) { const y=scaleY(fast[i]); i===0?ctx.moveTo(scaleX(i),y):ctx.lineTo(scaleX(i),y); }
+  ctx.stroke();
+}
+
+// ── Gain plot ─────────────────────────────────────────────────────────────────
+function drawGain() {
+  const c = document.getElementById('cGain');
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  const pad = { l:44, r:10, t:10, b:24 };
+  const pw = W-pad.l-pad.r, ph = H-pad.t-pad.b;
+
+  const sr=441, N=400;
+  const { fast, slow } = simulateEnvelopes(N, 40, 400, sr);
+  const depth=1.7, multEnd=1-depth;
+
+  const gain_dB = new Float32Array(N);
+  for (let i=0; i<N; i++) {
+    const delta = todB(Math.sqrt(slow[i])) - todB(Math.sqrt(fast[i]));
+    gain_dB[i] = Math.min(delta*0.5*multEnd, 0);
+  }
+
+  ctx.fillStyle='#23272e'; ctx.fillRect(0,0,W,H);
+
+  const minDB=-20, maxDB=5;
+  const scaleY = v => pad.t + ph*(1-(v-minDB)/(maxDB-minDB));
+  const scaleX = i => pad.l + (i/N)*pw;
+
+  ctx.strokeStyle='#2e3440'; ctx.lineWidth=0.5;
+  for (let db=-20; db<=0; db+=5) {
+    const y=scaleY(db);
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+pw,y); ctx.stroke();
+    ctx.fillStyle=db===0?'#40bf80':'#6e7a86'; ctx.font='9px monospace'; ctx.textAlign='right';
+    ctx.fillText(db+'dB', pad.l-4, y+3);
+  }
+  ctx.fillStyle='#6e7a86'; ctx.textAlign='center';
+  ctx.fillText('time →', pad.l+pw/2, H-5);
+
+  ctx.beginPath(); ctx.strokeStyle='#40bf8040'; ctx.lineWidth=1;
+  ctx.setLineDash([4,4]);
+  ctx.moveTo(pad.l, scaleY(0)); ctx.lineTo(pad.l+pw, scaleY(0));
+  ctx.stroke(); ctx.setLineDash([]);
+
+  ctx.beginPath(); ctx.strokeStyle='#c09030'; ctx.lineWidth=2;
+  for (let i=0; i<N; i++) { const y=scaleY(gain_dB[i]); i===0?ctx.moveTo(scaleX(i),y):ctx.lineTo(scaleX(i),y); }
+  ctx.stroke();
+
+  const minGain=Math.min(...gain_dB), minIdx=gain_dB.indexOf(minGain);
+  ctx.fillStyle='#c09030'; ctx.font='9px monospace'; ctx.textAlign='left';
+  ctx.fillText(`peak: ${minGain.toFixed(1)} dB`, scaleX(minIdx)+6, scaleY(minGain)+12);
+}
+
+// ── Depth response plot ───────────────────────────────────────────────────────
+function drawDepth() {
+  const c = document.getElementById('cDepth');
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  const pad = { l:44, r:10, t:10, b:24 };
+  const pw = W-pad.l-pad.r, ph = H-pad.t-pad.b;
+
+  ctx.fillStyle='#23272e'; ctx.fillRect(0,0,W,H);
+
+  const depths  = [1.3, 1.7, 2.5, 3.5, 5.0];
+  const colours = ['#22bfbf','#40bf80','#c09030','#cf6828','#bf4040'];
+
+  const dMin=0,dMax=30,gMin=-30,gMax=2;
+  const scaleX = d => pad.l + (d-dMin)/(dMax-dMin)*pw;
+  const scaleY = g => pad.t + ph*(1-(g-gMin)/(gMax-gMin));
+
+  ctx.strokeStyle='#2e3440'; ctx.lineWidth=0.5;
+  for (let g=-30; g<=0; g+=5) {
+    const y=scaleY(g);
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+pw,y); ctx.stroke();
+    ctx.fillStyle=g===0?'#40bf80':'#6e7a86'; ctx.font='9px monospace'; ctx.textAlign='right';
+    ctx.fillText(g+'dB', pad.l-4, y+3);
+  }
+  for (let d=0; d<=30; d+=5) {
+    const x=scaleX(d);
+    ctx.beginPath(); ctx.moveTo(x,pad.t); ctx.lineTo(x,pad.t+ph); ctx.stroke();
+    ctx.fillStyle='#6e7a86'; ctx.textAlign='center';
+    ctx.fillText(d, x, H-5);
+  }
+
+  ctx.beginPath(); ctx.strokeStyle='#40bf8040'; ctx.lineWidth=1;
+  ctx.setLineDash([3,3]);
+  ctx.moveTo(pad.l, scaleY(0)); ctx.lineTo(pad.l+pw, scaleY(0));
+  ctx.stroke(); ctx.setLineDash([]);
+
+  const tbody=document.getElementById('depth-table');
+  const legend=document.getElementById('depth-legend');
+  tbody.innerHTML=''; legend.innerHTML='';
+
+  depths.forEach((depth,di) => {
+    const multEnd=1-depth;
+    const maxRed=30*0.5*multEnd;
+
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td style="color:${colours[di]}">${depth}×</td><td>${Math.round(1000/depth)}</td><td>${multEnd.toFixed(2)}</td><td>${maxRed.toFixed(1)} dB</td>`;
+    tbody.appendChild(tr);
+
+    const li=document.createElement('div');
+    li.className='legend-item';
+    li.innerHTML=`<div class="swatch" style="background:${colours[di]}"></div>${depth}×`;
+    legend.appendChild(li);
+
+    ctx.beginPath(); ctx.strokeStyle=colours[di]; ctx.lineWidth=1.5;
+    for (let d=0; d<=30; d+=0.5) {
+      const g=Math.min(d>0?d*0.5*multEnd:0, 0);
+      const x=scaleX(d), y=scaleY(g);
+      d===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  });
+}
+
+drawEnvelope();
+drawGain();
+drawDepth();
 </script>
 </body>
 </html>
